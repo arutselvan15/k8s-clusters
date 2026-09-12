@@ -4,8 +4,10 @@
 #
 #   # set bucket in clusters/backup.yaml
 #   ./scripts/sensitive/s3.sh init
-#   ./scripts/sensitive/s3.sh push
+#   ./scripts/sensitive/s3.sh push --prune
 #   ./scripts/sensitive/s3.sh pull
+#
+# infra/up.sh, infra/down.sh, kubeadm/up.sh, and kubeadm/reset.sh call "offer".
 
 set -euo pipefail
 
@@ -17,18 +19,19 @@ PRUNE=""
 
 usage() {
   cat <<EOF
-Usage: ./scripts/sensitive/s3.sh <init|push|pull> [--prune]
+Usage: ./scripts/sensitive/s3.sh <init|push|pull|offer> [--prune]
 
   init    Create the S3 bucket (encryption, versioning, no public access)
   push    Upload sensitive/ to s3://<bucket>/<prefix>/
   pull    Download into sensitive/ (new laptop / crash recovery)
+  offer   Prompt y/N, then push --prune (infra and kubeadm dispatchers)
 
   --prune  with push: delete S3 objects that are gone locally
 
 Bucket name and region: clusters/backup.yaml (not a secret).
 AWS keys: sensitive/aws/credentials if present, otherwise the usual AWS CLI chain.
 
-This script is independent of ./scripts/infra/up.sh.
+Non-interactive: K8S_PLAT_S3_BACKUP=yes|no (skip the prompt).
 EOF
 }
 
@@ -91,7 +94,7 @@ cmd_init() {
   aws s3api put-bucket-encryption --bucket "${BACKUP_BUCKET}" --server-side-encryption-configuration \
     '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"},"BucketKeyEnabled":true}]}'
   echo "==> Bucket ready (private, versioned, AES-256). URI: $(k8s_plat_backup_uri)"
-  echo "    Next: ./scripts/sensitive/s3.sh push"
+  echo "    Next: ./scripts/sensitive/s3.sh push --prune"
 }
 
 cmd_push() {
@@ -107,6 +110,48 @@ cmd_push() {
   aws s3 sync "${K8S_PLAT_SENSITIVE_DIR}/" "$(k8s_plat_backup_uri)" \
     --sse AES256 --region "${BACKUP_REGION}" "${extra[@]}"
   echo "==> Push complete. Object contents are not printed."
+}
+
+cmd_offer() {
+  local reply=""
+
+  k8s_plat_backup_aws_env
+  if ! k8s_plat_backup_load 2>/dev/null; then
+    echo "==> Skip S3 backup (set bucket in clusters/backup.yaml, then ./scripts/sensitive/s3.sh init)."
+    return 0
+  fi
+
+  PRUNE=1
+  echo ""
+  echo "S3 backup: push ${K8S_PLAT_SENSITIVE_DIR}/ -> $(k8s_plat_backup_uri)"
+  echo "  with prune (delete remote objects that are gone locally)"
+
+  case "${K8S_PLAT_S3_BACKUP:-}" in
+    1 | yes | YES | true | TRUE)
+      cmd_push
+      return 0
+      ;;
+    0 | no | NO | false | FALSE)
+      echo "Skipped S3 backup (K8S_PLAT_S3_BACKUP=${K8S_PLAT_S3_BACKUP})."
+      return 0
+      ;;
+  esac
+
+  if [[ ! -t 0 ]]; then
+    echo "Skipped S3 backup (stdin is not a TTY). Run: ./scripts/sensitive/s3.sh push --prune"
+    return 0
+  fi
+
+  reply=""
+  read -r -p "Push to S3 with prune? [y/N] " reply || true
+  case "${reply}" in
+    y | Y | yes | YES)
+      cmd_push
+      ;;
+    *)
+      echo "Skipped S3 backup."
+      ;;
+  esac
 }
 
 cmd_pull() {
@@ -136,7 +181,7 @@ while [[ $# -gt 0 ]]; do
     --prune)
       PRUNE=1
       ;;
-    init | push | pull)
+    init | push | pull | offer)
       CMD="$1"
       ;;
     *)

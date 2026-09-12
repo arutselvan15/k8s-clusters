@@ -70,7 +70,7 @@ AWS and OpenStack Day 0: [aws.md](./aws.md), [openstack.md](./openstack.md). Dis
 ./scripts/infra/down.sh kind
 ```
 
-Removes the cluster and `sensitive/kind/kubeconfig`.
+Removes the cluster and `sensitive/kind/kubeconfig`. Prompts to push `sensitive/` to S3 with prune.
 
 ## Checklist — you understood Day 0 when you can explain
 

@@ -52,6 +52,8 @@ Checklist: [terraform/environments/openstack/STEPS.md](terraform/environments/op
 
 kubeadm is **not** Terraform. Same scripts on AWS and OpenStack after Day 0 writes `cluster.env`.
 
+S3 backup of `sensitive/` is offered by `./scripts/infra/up.sh` and `./scripts/infra/down.sh` (not by the per-cloud scripts).
+
 ## Next
 
 ```bash

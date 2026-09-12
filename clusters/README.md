@@ -30,7 +30,7 @@ If a platform has more than one cluster dir, pass the id (`./scripts/infra/up.sh
 |------|------|---------|
 | `aws/*/config.yaml` | yes | Terraform + kubeadm knobs |
 | `openstack/*/config.yaml` | yes | same (`cloud:` must match a key in `clouds.yaml`) |
-| `backup.yaml` | yes | `./scripts/sensitive/s3.sh` (bucket name only) |
+| `backup.yaml` | yes | `./scripts/sensitive/s3.sh` bucket name only; offer after cluster build |
 | `sensitive/aws/credentials` | no | AWS CLI / Terraform |
 | `sensitive/openstack/clouds.yaml` | no | OpenStack provider |
 

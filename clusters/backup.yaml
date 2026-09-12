@@ -2,8 +2,9 @@
 # Do not put AWS keys here.
 #
 #   ./scripts/sensitive/s3.sh init
-#   ./scripts/sensitive/s3.sh push
+#   ./scripts/sensitive/s3.sh push --prune
+# After ./scripts/infra/up.sh, ./scripts/infra/down.sh, or kubeadm/up.sh: y/N then push --prune.
 
-bucket: REPLACE_ME
+bucket: arun-aws-s3-general
 region: us-east-1
 prefix: k8s-platform/sensitive

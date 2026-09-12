@@ -65,7 +65,7 @@ Kind-only shortcut for steps 1–2: `./scripts/bootstrap/up.sh`
 
 **Kind UI (after cert Ready):** `127.0.0.1 argocd.dev` in `/etc/hosts` → **https://argocd.dev:8443**. Re-run `./bootstrap/bootstrap.sh dev` when `argocd-server-tls` is Ready. See [bootstrap/README.md](../bootstrap/README.md) and [gitops/README.md](../gitops/README.md).
 
-Teardown Day 0 only (`gitops/` and `bootstrap/` stay in Git):
+Teardown Day 0 only (`gitops/` and `bootstrap/` stay in Git). After destroy, the dispatcher prompts to push `sensitive/` to S3 with prune:
 
 ```bash
 ./scripts/infra/down.sh kind

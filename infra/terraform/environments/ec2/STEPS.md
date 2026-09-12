@@ -8,13 +8,12 @@ Learning notes: [docs/infra/aws.md](../../../../docs/infra/aws.md) → [aws-kube
 
 ```bash
 ./scripts/infra/up.sh aws k8s-aws
-# or: ./scripts/infra/aws/up.sh default
 # after VMs exist: ./scripts/infra/kubeadm/up.sh aws k8s-aws
 ```
 
 **Config:** `sensitive/aws/credentials` (keys), `sensitive/aws/cli.conf` (region), `clusters/aws/<id>/config.yaml` (cluster knobs).  
 **Code:** [`main.tf`](./main.tf) in this directory.  
-**Tear down:** `./scripts/infra/aws/down.sh default -y`
+**Tear down:** `./scripts/infra/down.sh aws k8s-aws -y`
 
 ---
 
@@ -46,7 +45,7 @@ Update the **Status** column when you finish a step. Summaries below stay as the
 - `sensitive/aws/cli.conf` — `region` (gitignored)
 - `clusters/aws/k8s-aws/config.yaml` — cluster knobs (`cluster_name`, `vpc_cidr`, …) (committed)
 
-**Check:** `./scripts/infra/aws/up.sh default` prints `aws sts get-caller-identity` (account id + IAM ARN).
+**Check:** `./scripts/infra/up.sh aws k8s-aws` prints `aws sts get-caller-identity` (account id + IAM ARN).
 
 ---
 
@@ -159,7 +158,7 @@ Console: **VPC → Security groups → k8s-aws-sg**.
 
 **Learn:** This VM *will be* the Kubernetes control plane after kubeadm (API server, etcd, scheduler). Right now it is only **Ubuntu 22.04**. Terraform does not install Kubernetes yet.
 
-**Cost starts here:** `t3.medium` ~$0.04/hour + 20 GiB gp3 + a public IPv4 (~$0.005/hour). Destroy with `./scripts/infra/aws/down.sh default -y` when you stop for the day.
+**Cost starts here:** `t3.medium` ~$0.04/hour + 20 GiB gp3 + a public IPv4 (~$0.005/hour). Destroy with `./scripts/infra/down.sh aws k8s-aws -y` when you stop for the day.
 
 **Created:**
 
@@ -253,7 +252,7 @@ terraform -chdir=infra/terraform/environments/ec2 output
 
 ## Step 8 — kubeadm
 
-**Learn:** Terraform stopped at Ubuntu VMs. Kubernetes is a **separate** step: `kubeadm/up.sh` reads `sensitive/aws/k8s-aws/cluster.env` (written by `aws/up.sh`), not Terraform. Same minor version on every node (`kubernetes_version` / `K8S_VERSION`). Pod CIDR is `192.168.0.0/16` so it does **not** overlap the VPC `10.0.0.0/16`. `WORKER_HOSTS` is a space-separated list (one or more workers).
+**Learn:** Terraform stopped at Ubuntu VMs. Kubernetes is a **separate** step: `kubeadm/up.sh` reads `sensitive/aws/k8s-aws/cluster.env` (written by `./scripts/infra/up.sh aws k8s-aws`), not Terraform. Same minor version on every node (`kubernetes_version` / `K8S_VERSION`). Pod CIDR is `192.168.0.0/16` so it does **not** overlap the VPC `10.0.0.0/16`. `WORKER_HOSTS` is a space-separated list (one or more workers).
 
 **Created (after you finish):** kubeadm cluster; Calico CNI; `sensitive/aws/k8s-aws/kubeconfig` on the laptop.
 
@@ -269,7 +268,7 @@ kubectl get nodes -o wide
 
 The script SSHs using the inventory (`SSH_USER`, `SSH_KEY`, hosts) and streams [`scripts/infra/kubeadm/remote/`](../../../../scripts/infra/kubeadm/remote/) over SSH stdin (nothing is copied onto the VMs). It is safe to re-run (skips init/join if already done). Manual copy-paste is below if you want to watch each command.
 
-Inventory (gitignored; `aws/up.sh` writes it): `sensitive/aws/k8s-aws/cluster.env`. Template: [`scripts/infra/kubeadm/inventory.example`](../../../../scripts/infra/kubeadm/inventory.example). Extra workers: set `worker_nodes` in `clusters/aws/k8s-aws/config.yaml` and re-apply Terraform, then run `kubeadm/up.sh` again.
+Inventory (gitignored; Day 0 writes it): `sensitive/aws/k8s-aws/cluster.env`. Template: [`scripts/infra/kubeadm/inventory.example`](../../../../scripts/infra/kubeadm/inventory.example). Extra workers: set `worker_nodes` in `clusters/aws/k8s-aws/config.yaml` and re-apply Terraform, then run `kubeadm/up.sh` again.
 
 On the laptop, note the IPs (used as `--control-plane-endpoint` so kubectl from the Mac hits `:6443`):
 
@@ -383,7 +382,7 @@ kubectl get nodes -o wide
 
 `clusters/` outputs are gitignored. `admin.conf` already has `https://<public-ip>:6443` because of `--control-plane-endpoint`.
 
-### Reset (before `aws/down.sh`)
+### Reset (before `infra/down.sh`)
 
 Kubernetes only (keep the VMs):
 
@@ -391,7 +390,7 @@ Kubernetes only (keep the VMs):
 ./scripts/infra/kubeadm/reset.sh aws k8s-aws
 ```
 
-Then destroy AWS: `./scripts/infra/aws/down.sh default -y`.
+Then destroy AWS: `./scripts/infra/down.sh aws k8s-aws -y`.
 
 ---
 

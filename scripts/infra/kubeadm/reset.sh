@@ -88,3 +88,5 @@ fi
 
 echo "Kubernetes removed from the nodes."
 echo "Reinstall: ./scripts/infra/kubeadm/up.sh ${K8S_PLAT_CLUSTER_PLATFORM} ${K8S_PLAT_CLUSTER_CONFIG_ID}"
+
+k8s_plat_s3_offer

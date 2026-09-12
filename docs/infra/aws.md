@@ -67,7 +67,7 @@ The current `main.tf` applies **all** of AWS-1–7 in one `./scripts/infra/up.sh
 
 6. Install Terraform: `brew tap hashicorp/tap && brew install hashicorp/tap/terraform`
 
-**Checkpoint:** `./scripts/infra/aws/up.sh` prints `aws sts get-caller-identity` (or run that after sourcing project env).
+**Checkpoint:** `./scripts/infra/up.sh aws k8s-aws` prints `aws sts get-caller-identity` (or run that after sourcing project env).
 
 **Cost:** $0 until you create EC2.
 
@@ -176,7 +176,7 @@ PEM: `sensitive/aws/k8s-aws/ssh.pem` (gitignored). User: `ubuntu`.
 terraform -chdir=infra/terraform/environments/ec2 output
 ```
 
-`aws/up.sh` writes `sensitive/aws/k8s-aws/cluster.env` (gitignored) for kubeadm.
+`./scripts/infra/up.sh aws k8s-aws` writes `sensitive/aws/k8s-aws/cluster.env` (gitignored) for kubeadm.
 
 **Next:** [aws-kubeadm.md](./aws-kubeadm.md) — automated `./scripts/infra/kubeadm/up.sh` or manual K-1–K-4. Then [bootstrap](../bootstrap/) and [gitops](../gitops/).
 

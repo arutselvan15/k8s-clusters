@@ -18,8 +18,10 @@ Cluster YAML stays in [`clusters/`](../clusters/README.md) and is committed.
 ```bash
 # set bucket in clusters/backup.yaml
 ./scripts/sensitive/s3.sh init
-./scripts/sensitive/s3.sh push
+./scripts/sensitive/s3.sh push --prune
 ./scripts/sensitive/s3.sh pull    # new laptop (AWS keys first)
 ```
+
+After `./scripts/infra/up.sh`, `./scripts/infra/down.sh`, `./scripts/infra/kubeadm/up.sh`, or `kubeadm/reset.sh`, the script asks **Push to S3 with prune? [y/N]**. `yes` runs `push --prune`; `no` skips. Non-interactive: `K8S_PLAT_S3_BACKUP=yes` or `no`.
 
 Do not paste PEM, kubeconfig, or access keys into chat.

@@ -18,7 +18,7 @@ Apply AWS EC2 lab (terraform environments/ec2) for exactly one cluster config.
   cluster     id or path (required). clusters/aws/<id>/config.yaml
   -y, --yes   terraform apply -auto-approve
 
-Teardown: $(dirname "$0")/down.sh [cluster]
+Teardown: ./scripts/infra/down.sh aws [cluster]
 EOF
 }
 

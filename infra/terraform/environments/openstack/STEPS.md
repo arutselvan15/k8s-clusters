@@ -8,13 +8,12 @@ Learning notes: [docs/infra/openstack.md](../../../../docs/infra/openstack.md). 
 
 ```bash
 ./scripts/infra/up.sh openstack k8s-ocp
-# or: ./scripts/infra/openstack/up.sh default
 ./scripts/infra/kubeadm/up.sh openstack k8s-ocp
 ```
 
 **Config:** `sensitive/openstack/clouds.yaml` (Keystone auth) and `clusters/openstack/<id>/config.yaml` (image, flavor, existing `network_name`).  
 **Code:** [`main.tf`](./main.tf).  
-**Tear down:** `./scripts/infra/openstack/down.sh default -y`
+**Tear down:** `./scripts/infra/down.sh openstack k8s-ocp -y`
 
 This cloud is **not** like AWS VPC: the project already has `tenant-internal-direct-net`. Terraform **looks up** that network and puts VMs on it. It does **not** create a network, subnet, router, or floating IP (those quotas are already used).
 
@@ -76,7 +75,7 @@ Pick an Ubuntu image, a flavor with ~2–4 vCPU / 8 GiB RAM, and the **existing*
 
 **Outputs:** `project_id`, `project_name`, `user_name`
 
-**Check:** `./scripts/infra/openstack/up.sh` (first apply creates the rest of the stack in later steps — this environment is one apply, like current `ec2`).
+**Check:** `./scripts/infra/up.sh openstack k8s-ocp` (first apply creates the rest of the stack in later steps — this environment is one apply, like current `ec2`).
 
 ---
 
@@ -131,7 +130,7 @@ ssh -i sensitive/openstack/k8s-ocp/ssh.pem ubuntu@$(terraform -chdir=infra/terra
 terraform -chdir=infra/terraform/environments/openstack output
 ```
 
-`./scripts/infra/openstack/up.sh` writes **`sensitive/openstack/k8s-ocp/cluster.env`** (gitignored) for kubeadm. No Terraform in the kubeadm scripts.
+`./scripts/infra/up.sh openstack k8s-ocp` writes **`sensitive/openstack/k8s-ocp/cluster.env`** (gitignored) for kubeadm. No Terraform in the kubeadm scripts.
 
 ---
 
@@ -146,7 +145,7 @@ kubectl get nodes -o wide
 ```
 
 Reset Kubernetes only: `./scripts/infra/kubeadm/reset.sh openstack k8s-ocp`  
-Destroy VMs: `./scripts/infra/openstack/down.sh default -y`
+Destroy VMs: `./scripts/infra/down.sh openstack k8s-ocp -y`
 
 ---
 

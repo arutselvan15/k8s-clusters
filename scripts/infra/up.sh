@@ -12,6 +12,9 @@ PLATFORM="kind"
 YES=""
 CLUSTER=""
 
+# shellcheck source=scripts/lib/paths.sh
+source "${REPO_ROOT}/scripts/lib/paths.sh"
+
 usage() {
   cat <<EOF
 Usage: $(basename "$0") [kind|aws|openstack] [cluster] [-y]
@@ -25,6 +28,9 @@ Usage: $(basename "$0") [kind|aws|openstack] [cluster] [-y]
 
   -y, --yes   pass through to the platform script
   -h, --help
+
+After a successful apply, prompts to push sensitive/ to S3 with prune
+(kind, aws, and openstack).
 
 Build always applies exactly one cluster config.
 
@@ -63,12 +69,15 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ "${PLATFORM}" == "kind" ]]; then
-  exec "${REPO_ROOT}/scripts/infra/kind/up.sh" ${YES}
+  # shellcheck disable=SC2086
+  "${REPO_ROOT}/scripts/infra/kind/up.sh" ${YES}
+  k8s_plat_s3_offer
+  exit 0
 fi
 
-# shellcheck source=scripts/lib/paths.sh
-source "${REPO_ROOT}/scripts/lib/paths.sh"
 # shellcheck source=scripts/lib/cluster-config.sh
 source "${REPO_ROOT}/scripts/lib/cluster-config.sh"
 k8s_plat_require_cluster_spec "${PLATFORM}" "${CLUSTER}" || exit 1
-exec "${REPO_ROOT}/scripts/infra/${PLATFORM}/up.sh" ${YES} --cluster "${CLUSTER}"
+# shellcheck disable=SC2086
+"${REPO_ROOT}/scripts/infra/${PLATFORM}/up.sh" ${YES} --cluster "${CLUSTER}"
+k8s_plat_s3_offer

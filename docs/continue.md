@@ -28,7 +28,8 @@ Index: [`docs/README.md`](./README.md) · Model: [`platform-lifecycle.md`](./pla
 | Cloud vs local | Kind for daily/$0; AWS / OpenStack for real VMs + kubeadm. |
 | AWS Kubernetes | **Not EKS**; kubeadm on EC2. |
 | Day 0 CLI | `scripts/infra/up.sh` / `down.sh` → `kind` \| `aws` \| `openstack`. Terraform envs: `kind`, `ec2`, `openstack`. |
-| kubeadm | Inventory-only (`scripts/infra/kubeadm/`); same scripts on AWS and OpenStack. |
+| kubeadm | Same args as Day 0: `kubeadm/up.sh aws k8s-aws`. Inventory-only; same scripts on AWS and OpenStack. |
+| S3 backup | Bucket in `clusters/backup.yaml`. Dispatchers prompt y/N then `push --prune`. |
 | OpenStack network | **Lookup** `network_name`; do **not** create or destroy the tenant net. |
 | Ingress on cloud | Kind uses `hostPort`; cloud typically needs `LoadBalancer` (AWS CCM not in repo yet). Same GitOps app, different values. |
 

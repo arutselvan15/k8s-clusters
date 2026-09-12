@@ -35,7 +35,7 @@ echo "==> Validate tools"
 "$REPO_ROOT/scripts/lib/require-tools.sh" kubectl helm envsubst
 
 echo "==> Day 0: Kind cluster"
-"$REPO_ROOT/scripts/infra/kind/up.sh"
+"$REPO_ROOT/scripts/infra/up.sh" kind
 
 echo "==> Kubeconfig"
 KUBECONFIG_FILE="${REPO_ROOT}/sensitive/kind/kubeconfig"

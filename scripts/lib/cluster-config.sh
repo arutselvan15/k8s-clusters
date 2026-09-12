@@ -12,15 +12,10 @@ k8s_plat_cluster_token_ok() {
 # Sets K8S_PLAT_CLUSTER_CONFIG from clusters/<platform>/<id>/config.yaml
 k8s_plat_cluster_yaml_in_dir() {
   local d="$1"
-  local n
-  n="$(basename "${d}")"
-  local f
-  for f in config.yaml cluster.yaml "${n}.yaml"; do
-    if [[ -f "${d}/${f}" ]]; then
-      echo "${d}/${f}"
-      return 0
-    fi
-  done
+  if [[ -f "${d}/config.yaml" ]]; then
+    echo "${d}/config.yaml"
+    return 0
+  fi
   return 1
 }
 
@@ -74,10 +69,6 @@ k8s_plat_resolve_cluster_config() {
     resolved="$(cd "$(dirname "${spec}")" && pwd)/$(basename "${spec}")"
   elif yaml="$(k8s_plat_cluster_yaml_in_dir "${dir}/${spec}")"; then
     resolved="${yaml}"
-  elif [[ -f "${dir}/${spec}" ]]; then
-    resolved="${dir}/${spec}"
-  elif [[ -f "${dir}/${spec}.yaml" ]]; then
-    resolved="${dir}/${spec}.yaml"
   else
     echo "No cluster config for ${platform}: ${spec}" >&2
     echo "  Add ${dir}/${spec}/config.yaml" >&2
@@ -87,7 +78,7 @@ k8s_plat_resolve_cluster_config() {
 
   K8S_PLAT_CLUSTER_CONFIG="${resolved}"
   K8S_PLAT_CLUSTER_PLATFORM="${platform}"
-  if [[ "$(basename "${resolved}")" == "cluster.yaml" || "$(basename "${resolved}")" == "config.yaml" ]]; then
+  if [[ "$(basename "${resolved}")" == "config.yaml" ]]; then
     K8S_PLAT_CLUSTER_CONFIG_ID="$(basename "$(dirname "${resolved}")")"
   else
     K8S_PLAT_CLUSTER_CONFIG_ID="$(basename "${resolved}")"
@@ -131,23 +122,6 @@ k8s_plat_apply_cluster_outputs() {
   K8S_PLAT_CLUSTER_ENV="${K8S_PLAT_CLUSTER_DIR}/cluster.env"
   K8S_PLAT_CLUSTER_KNOWN_HOSTS="${K8S_PLAT_CLUSTER_DIR}/known_hosts"
   K8S_PLAT_TFSTATE="${K8S_PLAT_CLUSTER_DIR}/terraform.tfstate"
-
-  # Bind former aws/os path names so existing scripts keep working.
-  K8S_PLAT_AWS_CLUSTER_DIR="${K8S_PLAT_CLUSTER_DIR}"
-  K8S_PLAT_AWS_KUBECONFIG="${K8S_PLAT_CLUSTER_KUBECONFIG}"
-  K8S_PLAT_AWS_SSH_KEY="${K8S_PLAT_CLUSTER_SSH_KEY}"
-  K8S_PLAT_AWS_CLUSTER_ENV="${K8S_PLAT_CLUSTER_ENV}"
-  K8S_PLAT_AWS_KNOWN_HOSTS="${K8S_PLAT_CLUSTER_KNOWN_HOSTS}"
-  K8S_PLAT_AWS_INFRA_YAML="${yaml}"
-
-  K8S_PLAT_OS_CLUSTER_DIR="${K8S_PLAT_CLUSTER_DIR}"
-  K8S_PLAT_OS_KUBECONFIG="${K8S_PLAT_CLUSTER_KUBECONFIG}"
-  K8S_PLAT_OS_SSH_KEY="${K8S_PLAT_CLUSTER_SSH_KEY}"
-  K8S_PLAT_OS_CLUSTER_ENV="${K8S_PLAT_CLUSTER_ENV}"
-  K8S_PLAT_OS_KNOWN_HOSTS="${K8S_PLAT_CLUSTER_KNOWN_HOSTS}"
-  K8S_PLAT_OS_INFRA_YAML="${yaml}"
-  K8S_OS_CONFIG_FILE="${yaml}"
-  export K8S_OS_CONFIG_FILE
 
   mkdir -p "${K8S_PLAT_CLUSTER_DIR}"
   echo "==> Cluster ${K8S_PLAT_CLUSTER_NAME} (config ${yaml})"

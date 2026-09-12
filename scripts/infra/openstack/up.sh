@@ -20,7 +20,7 @@ Apply OpenStack lab (terraform environments/openstack) for exactly one cluster c
 
 Attaches VMs to an existing Neutron network (does not create or delete that network).
 
-Teardown: $(dirname "$0")/down.sh [cluster]
+Teardown: ./scripts/infra/down.sh openstack [cluster]
 EOF
 }
 

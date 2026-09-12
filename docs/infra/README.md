@@ -20,6 +20,8 @@ Code: [`infra/terraform/environments/`](../../infra/terraform/environments/). Di
 
 kubeadm is **not** Terraform. The same remote scripts install Kubernetes on AWS and OpenStack VMs.
 
+S3: after `up.sh` / `down.sh` (and kubeadm up/reset) you are asked to `push --prune`. Bucket name: `clusters/backup.yaml`.
+
 Inputs (`clusters/`) vs outputs (`sensitive/`): [clusters/README.md](../../clusters/README.md) · [sensitive/README.md](../../sensitive/README.md)
 
 **Next (every environment):** [bootstrap](../bootstrap/) → [gitops](../gitops/)

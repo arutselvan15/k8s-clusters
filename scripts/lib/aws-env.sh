@@ -15,7 +15,7 @@ export AWS_SDK_LOAD_CONFIG=1
 export AWS_PROFILE="${AWS_PROFILE:-default}"
 
 k8s_plat_aws_infra_get() {
-  k8s_plat_yaml_get "${K8S_PLAT_AWS_INFRA_YAML}" "$1"
+  k8s_plat_yaml_get "${K8S_PLAT_CLUSTER_CONFIG}" "$1"
 }
 
 k8s_plat_aws_cli_get() {
@@ -41,7 +41,7 @@ k8s_plat_load_provider_vars() {
   echo "    cluster_name=${cluster_name} vpc_cidr=${vpc_cidr} admin_cidr=${admin_cidr}"
   echo "    node_instance_type=${node_instance_type} worker_nodes=${worker_nodes}"
   echo "    nodes ${cluster_name}-cp / ${cluster_name}-wk-N"
-  echo "    cluster config=${K8S_PLAT_AWS_INFRA_YAML}"
+  echo "    cluster config=${K8S_PLAT_CLUSTER_CONFIG}"
   K8S_TF_VAR_ARGS=(
     -var "aws_region=${region}"
     -var "aws_profile=${AWS_PROFILE}"

@@ -9,7 +9,7 @@ scripts/
 │   ├── up.sh / down.sh  # kind | aws | openstack
 │   ├── kind/ aws/ openstack/
 │   └── kubeadm/         # Kubernetes on VMs (not Terraform)
-├── sensitive/s3.sh      # backup sensitive/ to S3 (independent)
+├── sensitive/s3.sh      # backup sensitive/ to S3 (init|push|pull|offer)
 ├── bootstrap/           # Day 1 one-shot (Kind + Argo CD)
 │   └── up.sh
 └── gitops/              # Day 2
@@ -32,6 +32,6 @@ source scripts/lib/kubeconfig-setup.sh sensitive/kind/kubeconfig
 
 Day 1 on **any** cluster: `./bootstrap/bootstrap.sh dev` (repo `bootstrap/`, not this folder).
 
-`scripts/bootstrap/up.sh` is Kind-only convenience (Day 0 Kind + Day 1).
+`./scripts/bootstrap/up.sh` is Kind-only convenience (Day 0 Kind + Day 1). After Day 0 up/down (and kubeadm up/reset) you are prompted to push `sensitive/` to S3 with prune.
 
 Docs: [docs/README.md](../docs/README.md) · Inputs: [clusters/README.md](../clusters/README.md) · Secrets: [sensitive/README.md](../sensitive/README.md)

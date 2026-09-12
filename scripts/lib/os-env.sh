@@ -10,11 +10,10 @@ source "${REPO_ROOT}/scripts/lib/paths.sh"
 source "${REPO_ROOT}/scripts/lib/cluster-config.sh"
 
 export OS_CLIENT_CONFIG_FILE="${K8S_PLAT_OS_CLOUDS}"
-export K8S_OS_CONFIG_FILE="${K8S_PLAT_OS_INFRA_YAML}"
 export OS_CLOUD="${OS_CLOUD:-lab}"
 
 k8s_plat_os_config_get() {
-  k8s_plat_yaml_get "${K8S_OS_CONFIG_FILE}" "$1"
+  k8s_plat_yaml_get "${K8S_PLAT_CLUSTER_CONFIG}" "$1"
 }
 
 k8s_plat_require_os_credentials() {
@@ -52,25 +51,25 @@ k8s_plat_load_os_provider_vars() {
   elif k8s_plat_os_config_get external_network >/dev/null 2>&1; then
     network_name="$(k8s_plat_os_config_get external_network)"
   else
-    echo "Missing network_name in ${K8S_OS_CONFIG_FILE}" >&2
+    echo "Missing network_name in ${K8S_PLAT_CLUSTER_CONFIG}" >&2
     missing=1
     network_name=""
   fi
 
   for key in image_name node_flavor; do
     if ! k8s_plat_os_config_get "$key" >/dev/null 2>&1; then
-      echo "Missing ${key} in ${K8S_OS_CONFIG_FILE}" >&2
+      echo "Missing ${key} in ${K8S_PLAT_CLUSTER_CONFIG}" >&2
       missing=1
     else
       val="$(k8s_plat_os_config_get "$key")"
       if [[ "${val}" == "REPLACE_ME" ]]; then
-        echo "Set ${key} in ${K8S_OS_CONFIG_FILE} (Horizon: Images / Flavors / Networks)." >&2
+        echo "Set ${key} in ${K8S_PLAT_CLUSTER_CONFIG} (Horizon: Images / Flavors / Networks)." >&2
         missing=1
       fi
     fi
   done
   if [[ -n "${network_name}" && "${network_name}" == "REPLACE_ME" ]]; then
-    echo "Set network_name in ${K8S_OS_CONFIG_FILE} to an existing Neutron network." >&2
+    echo "Set network_name in ${K8S_PLAT_CLUSTER_CONFIG} to an existing Neutron network." >&2
     missing=1
   fi
   if [[ "${missing}" -ne 0 ]]; then
@@ -93,7 +92,7 @@ k8s_plat_load_os_provider_vars() {
   echo "    image_name=${image_name} node_flavor=${node_flavor} worker_nodes=${worker_nodes}"
   echo "    nodes ${cluster_name}-cp / ${cluster_name}-wk-N"
   echo "    ssh_user=${ssh_user}"
-  echo "    cluster config=${K8S_OS_CONFIG_FILE}"
+  echo "    cluster config=${K8S_PLAT_CLUSTER_CONFIG}"
 
   K8S_TF_VAR_ARGS=(
     -var "cloud=${cloud}"

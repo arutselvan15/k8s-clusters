@@ -11,6 +11,9 @@ PLATFORM="kind"
 YES=""
 CLUSTER=""
 
+# shellcheck source=scripts/lib/paths.sh
+source "${REPO_ROOT}/scripts/lib/paths.sh"
+
 usage() {
   cat <<EOF
 Usage: $(basename "$0") [kind|aws|openstack] [cluster] [-y]
@@ -22,6 +25,8 @@ Usage: $(basename "$0") [kind|aws|openstack] [cluster] [-y]
   cluster     same config id used at up (required for aws/openstack)
   -y, --yes   terraform destroy -auto-approve on aws/openstack
   -h, --help
+
+After destroy, prompts to push sensitive/ to S3 with prune.
 EOF
 }
 
@@ -55,12 +60,15 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ "${PLATFORM}" == "kind" ]]; then
-  exec "${REPO_ROOT}/scripts/infra/kind/down.sh" ${YES}
+  # shellcheck disable=SC2086
+  "${REPO_ROOT}/scripts/infra/kind/down.sh" ${YES}
+  k8s_plat_s3_offer
+  exit 0
 fi
 
-# shellcheck source=scripts/lib/paths.sh
-source "${REPO_ROOT}/scripts/lib/paths.sh"
 # shellcheck source=scripts/lib/cluster-config.sh
 source "${REPO_ROOT}/scripts/lib/cluster-config.sh"
 k8s_plat_require_cluster_spec "${PLATFORM}" "${CLUSTER}" || exit 1
-exec "${REPO_ROOT}/scripts/infra/${PLATFORM}/down.sh" ${YES} --cluster "${CLUSTER}"
+# shellcheck disable=SC2086
+"${REPO_ROOT}/scripts/infra/${PLATFORM}/down.sh" ${YES} --cluster "${CLUSTER}"
+k8s_plat_s3_offer

@@ -5,33 +5,16 @@
 : "${REPO_ROOT:?REPO_ROOT must be set before sourcing paths.sh}"
 
 K8S_PLAT_CLUSTER_INPUT_DIR="${REPO_ROOT}/clusters"
-K8S_PLAT_EXAMPLES_DIR="${REPO_ROOT}/clusters"
 K8S_PLAT_SENSITIVE_DIR="${REPO_ROOT}/sensitive"
-K8S_PLAT_CONFIG_DIR="${K8S_PLAT_SENSITIVE_DIR}"
-K8S_PLAT_CLUSTERS_DIR="${K8S_PLAT_SENSITIVE_DIR}"
 K8S_PLAT_BACKUP_YAML="${K8S_PLAT_CLUSTER_INPUT_DIR}/backup.yaml"
 
 # --- AWS / OpenStack secrets (not cluster-specific) ---
-K8S_PLAT_AWS_CREDENTIALS="${K8S_PLAT_CONFIG_DIR}/aws/credentials"
-K8S_PLAT_AWS_CLI_CONF="${K8S_PLAT_CONFIG_DIR}/aws/cli.conf"
-K8S_PLAT_OS_CLOUDS="${K8S_PLAT_CONFIG_DIR}/openstack/clouds.yaml"
-
-# Bound after k8s_plat_apply_cluster_outputs from the cluster id passed to the script.
-K8S_PLAT_AWS_INFRA_YAML=""
-K8S_PLAT_OS_INFRA_YAML=""
-K8S_PLAT_AWS_CLUSTER_DIR=""
-K8S_PLAT_AWS_KUBECONFIG=""
-K8S_PLAT_AWS_SSH_KEY=""
-K8S_PLAT_AWS_CLUSTER_ENV=""
-K8S_PLAT_AWS_KNOWN_HOSTS=""
-K8S_PLAT_OS_CLUSTER_DIR=""
-K8S_PLAT_OS_KUBECONFIG=""
-K8S_PLAT_OS_SSH_KEY=""
-K8S_PLAT_OS_CLUSTER_ENV=""
-K8S_PLAT_OS_KNOWN_HOSTS=""
+K8S_PLAT_AWS_CREDENTIALS="${K8S_PLAT_SENSITIVE_DIR}/aws/credentials"
+K8S_PLAT_AWS_CLI_CONF="${K8S_PLAT_SENSITIVE_DIR}/aws/cli.conf"
+K8S_PLAT_OS_CLOUDS="${K8S_PLAT_SENSITIVE_DIR}/openstack/clouds.yaml"
 
 # --- Kind outputs ---
-K8S_PLAT_KIND_CLUSTER_DIR="${K8S_PLAT_CLUSTERS_DIR}/kind"
+K8S_PLAT_KIND_CLUSTER_DIR="${K8S_PLAT_SENSITIVE_DIR}/kind"
 K8S_PLAT_KIND_KUBECONFIG="${K8S_PLAT_KIND_CLUSTER_DIR}/kubeconfig"
 K8S_PLAT_KIND_TFSTATE="${K8S_PLAT_KIND_CLUSTER_DIR}/terraform.tfstate"
 
@@ -233,4 +216,8 @@ if not found:
     sys.exit(1)
 print(result, end="")
 PY
+}
+
+k8s_plat_s3_offer() {
+  "${REPO_ROOT}/scripts/sensitive/s3.sh" offer
 }
