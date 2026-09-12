@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 # Day 0 — Kind cluster via Terraform (environments/kind).
 
+if [ -z "${BASH_VERSION:-}" ] || [ -n "${POSIXLY_CORRECT:-}" ]; then
+  exec /usr/bin/env bash "$0" "$@"
+fi
+
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 AUTO_APPROVE="-auto-approve"
-CLUSTER_SPEC="dev"
+CLUSTER_SPEC=""
 
 # shellcheck source=scripts/infra/kind/lib.sh
 source "${REPO_ROOT}/scripts/infra/kind/lib.sh"
@@ -15,13 +19,13 @@ usage() {
 Usage: ./scripts/infra/kind/up.sh [cluster] [-y]
 
 Create the local Kind cluster (terraform environments/kind).
-Config: clusters/kind/<id>/config.yaml (default id: dev).
-Writes kubeconfig to sensitive/kind/kubeconfig.
+Config: clusters/kind/<id>/config.yaml.
+Writes kubeconfig to sensitive/kind/<cluster_name>/kubeconfig.
 
 -y is accepted for consistency; Kind apply is auto-approved.
 
   ./scripts/infra/up.sh kind
-  ./scripts/infra/up.sh kind dev
+  ./scripts/infra/up.sh kind k8s-kind
 
 Teardown: ./scripts/infra/down.sh kind
 EOF
@@ -53,6 +57,7 @@ if [[ ! -d "$ENV_DIR" ]]; then
   exit 1
 fi
 
+CLUSTER_SPEC="$(k8s_plat_effective_cluster_spec kind "${CLUSTER_SPEC}")" || exit 1
 k8s_plat_kind_bind "${CLUSTER_SPEC}"
 k8s_plat_load_kind_vars
 

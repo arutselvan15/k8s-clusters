@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # Day 0 — destroy EC2 kubeadm lab. Independent of Kind.
 
+if [ -z "${BASH_VERSION:-}" ] || [ -n "${POSIXLY_CORRECT:-}" ]; then
+  exec /usr/bin/env bash "$0" "$@"
+fi
+
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
@@ -52,6 +56,7 @@ k8s_plat_apply_cluster_outputs
 
 if [[ ! -f "${K8S_PLAT_TFSTATE}" && ! -d "${ENV_DIR}/.terraform" ]]; then
   echo "No Terraform state for cluster ${K8S_PLAT_CLUSTER_NAME}; nothing to destroy."
+  k8s_plat_purge_cluster_outputs
   exit 0
 fi
 
@@ -65,9 +70,5 @@ k8s_plat_terraform_init "$ENV_DIR"
 # shellcheck disable=SC2086
 terraform destroy -input=false $AUTO_APPROVE "${K8S_TF_VAR_ARGS[@]}"
 
-if [[ -d "${K8S_PLAT_CLUSTER_DIR}" ]]; then
-  rm -f "${K8S_PLAT_CLUSTER_KUBECONFIG}" "${K8S_PLAT_CLUSTER_ENV}" "${K8S_PLAT_CLUSTER_KNOWN_HOSTS}"
-  echo "Removed local kubeconfig/inventory under ${K8S_PLAT_CLUSTER_DIR}"
-fi
-
+k8s_plat_purge_cluster_outputs
 echo "AWS cluster ${K8S_PLAT_CLUSTER_NAME} destroyed."

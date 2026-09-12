@@ -5,6 +5,10 @@
 #
 # Other scripts invoke this with their required tool list; it is not sourced.
 
+if [ -z "${BASH_VERSION:-}" ] || [ -n "${POSIXLY_CORRECT:-}" ]; then
+  exec /usr/bin/env bash "$0" "$@"
+fi
+
 set -euo pipefail
 
 usage() {

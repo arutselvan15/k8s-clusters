@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if [ -z "${BASH_VERSION:-}" ] || [ -n "${POSIXLY_CORRECT:-}" ]; then
+  exec /usr/bin/env bash "$0" "$@"
+fi
+
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -16,7 +20,7 @@ Safe to re-run (kubectl apply).
 Profiles: dev, stg, prod (must match gitops/clusters/<profile>/)
 
 Example:
-  source scripts/lib/kubeconfig-setup.sh sensitive/kind/kubeconfig
+  source scripts/lib/kubeconfig-setup.sh sensitive/kind/<cluster_name>/kubeconfig
   $(basename "$0") dev
 
 See: gitops/README.md
@@ -24,9 +28,12 @@ EOF
 }
 
 PROFILE="${1:-}"
-if [[ -z "$PROFILE" ]]; then
+if [[ "${PROFILE}" == "-h" || "${PROFILE}" == "--help" || -z "${PROFILE}" ]]; then
   usage
-  exit 1
+  if [[ -z "${PROFILE}" ]]; then
+    exit 1
+  fi
+  exit 0
 fi
 
 if [[ "${2:-}" != "" ]]; then

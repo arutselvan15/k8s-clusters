@@ -17,7 +17,7 @@ Commands: [`../scripts/infra/`](../scripts/README.md). Inputs: [`../clusters/`](
 
 ```bash
 ./scripts/infra/up.sh kind
-source scripts/lib/kubeconfig-setup.sh sensitive/kind/kubeconfig
+source scripts/lib/kubeconfig-setup.sh sensitive/kind/<cluster_name>/kubeconfig
 ```
 
 Knobs: [`../clusters/kind/dev/config.yaml`](../clusters/kind/dev/config.yaml) (`cluster_name: dev`). `./scripts/infra/up.sh kind` is the same as `./scripts/infra/up.sh kind dev`.
@@ -59,7 +59,7 @@ S3 backup of `sensitive/` is offered by `./scripts/infra/up.sh` and `./scripts/i
 ## Next
 
 ```bash
-source scripts/lib/kubeconfig-setup.sh sensitive/kind/kubeconfig   # or aws / openstack path above
+source scripts/lib/kubeconfig-setup.sh sensitive/kind/<cluster_name>/kubeconfig   # or aws / openstack path above
 ./bootstrap/bootstrap.sh dev
 ```
 

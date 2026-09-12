@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # Day 0 — kubeadm on OpenStack VMs. Independent of Kind and AWS.
 
+if [ -z "${BASH_VERSION:-}" ] || [ -n "${POSIXLY_CORRECT:-}" ]; then
+  exec /usr/bin/env bash "$0" "$@"
+fi
+
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"

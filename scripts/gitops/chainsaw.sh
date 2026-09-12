@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if [ -z "${BASH_VERSION:-}" ] || [ -n "${POSIXLY_CORRECT:-}" ]; then
+  exec /usr/bin/env bash "$0" "$@"
+fi
+
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -13,7 +17,7 @@ Run Kyverno Chainsaw e2e tests under gitops/chainsaw/ against the current cluste
 Requires: chainsaw on PATH, KUBECONFIG set (see scripts/lib/kubeconfig-setup.sh).
 
 Example:
-  source scripts/lib/kubeconfig-setup.sh sensitive/kind/kubeconfig
+  source scripts/lib/kubeconfig-setup.sh sensitive/kind/<cluster_name>/kubeconfig
   $(basename "$0")
 EOF
 }

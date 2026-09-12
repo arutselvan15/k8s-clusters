@@ -1,10 +1,10 @@
 # Kind local cluster (committed). Directory name is the config id.
-# Kind cluster name is `dev` (same as the GitOps overlay). Outputs: sensitive/kind/
+# Kind cluster name matches cluster_name. Outputs: sensitive/kind/<cluster_name>/
 #
 #   ./scripts/infra/up.sh kind
-#   ./scripts/infra/up.sh kind dev
+#   ./scripts/infra/up.sh kind k8s-kind
 
-cluster_name: dev
+cluster_name: k8s-kind
 
 terraform:
   kubernetes_version: "1.32.2"

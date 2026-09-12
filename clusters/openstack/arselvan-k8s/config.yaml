@@ -1,0 +1,28 @@
+# OpenStack lab cluster (committed). Directory name is the config id.
+# Nodes: k8s-ocp-cp, k8s-ocp-wk-N. Auth: sensitive/openstack/clouds.yaml
+#
+#   ./scripts/infra/up.sh openstack k8s-ocp
+
+cluster_name: arselvan-k8s
+# Must match a key under clouds: in sensitive/openstack/clouds.yaml
+cloud: openstack
+
+terraform:
+  worker_nodes: 1
+  ssh_user: ubuntu
+  ssh_port: 22
+  kubernetes_api_port: 6443
+  # Tighten to YOUR.PUBLIC.IP/32 when you leave the lab default.
+  admin_cidr: 0.0.0.0/0
+  root_volume_gb: 20
+  volume_delete_on_termination: true
+  image_most_recent: true
+  ssh_key_algorithm: ED25519
+  availability_zone: "cloud-rtp-1-c"
+  image_name: UBUNTU-24-SM-2026-05-V2
+  node_flavor: 4vCPUx8GB
+  network_name: tenant-internal-direct-net
+
+kubeadm:
+  kubernetes_version: "1.32"
+  pod_cidr: 192.168.0.0/16

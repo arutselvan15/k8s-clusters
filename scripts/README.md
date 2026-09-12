@@ -20,7 +20,7 @@ scripts/
 ```bash
 ./scripts/infra/up.sh kind
 ./scripts/bootstrap/up.sh
-source scripts/lib/kubeconfig-setup.sh sensitive/kind/kubeconfig
+source scripts/lib/kubeconfig-setup.sh sensitive/kind/<cluster_name>/kubeconfig
 ./scripts/gitops/start.sh dev
 
 ./scripts/infra/up.sh aws k8s-aws

@@ -16,10 +16,10 @@ infra/terraform/
 
 ```bash
 ./scripts/infra/up.sh kind
-source scripts/lib/kubeconfig-setup.sh sensitive/kind/kubeconfig
+source scripts/lib/kubeconfig-setup.sh sensitive/kind/<cluster_name>/kubeconfig
 ```
 
-Config: [`clusters/kind/dev/config.yaml`](../../clusters/kind/dev/config.yaml). Same as `./scripts/infra/up.sh kind dev`.
+Config: [`clusters/kind/k8s-kind/config.yaml`](../../clusters/kind/k8s-kind/config.yaml). Same as `./scripts/infra/up.sh kind k8s-kind`.
 
 Host ports **8080 → 80** and **8443 → 443** on the control-plane node (Argo UI later: https://argocd.dev:8443). Teardown: `./scripts/infra/down.sh kind`
 
@@ -60,7 +60,7 @@ terraform version   # >= 1.5
 ## Day 1
 
 ```bash
-source scripts/lib/kubeconfig-setup.sh sensitive/kind/kubeconfig   # or sensitive/<env>/<cluster_name>/kubeconfig
+source scripts/lib/kubeconfig-setup.sh sensitive/kind/<cluster_name>/kubeconfig   # or sensitive/<env>/<cluster_name>/kubeconfig
 ./bootstrap/bootstrap.sh dev
 ```
 

@@ -4,6 +4,10 @@
 #   ./scripts/infra/down.sh kind
 #   ./scripts/infra/down.sh aws [cluster] -y
 
+if [ -z "${BASH_VERSION:-}" ] || [ -n "${POSIXLY_CORRECT:-}" ]; then
+  exec /usr/bin/env bash "$0" "$@"
+fi
+
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -13,16 +17,18 @@ CLUSTER=""
 
 # shellcheck source=scripts/lib/paths.sh
 source "${REPO_ROOT}/scripts/lib/paths.sh"
+# shellcheck source=scripts/lib/cluster-config.sh
+source "${REPO_ROOT}/scripts/lib/cluster-config.sh"
 
 usage() {
   cat <<EOF
 Usage: $(basename "$0") [kind|aws|openstack] [cluster] [-y]
 
-  kind         ./scripts/infra/kind/down.sh [cluster]   (default id: dev)
+  kind         ./scripts/infra/kind/down.sh [cluster]
   aws          ./scripts/infra/aws/down.sh [cluster]
   openstack    ./scripts/infra/openstack/down.sh [cluster]
 
-  cluster     same config id used at up (kind defaults to dev)
+  cluster     same config id used at up (optional if only one config dir)
   -y, --yes   terraform destroy -auto-approve on aws/openstack
   -h, --help
 
@@ -59,17 +65,13 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
+CLUSTER="$(k8s_plat_effective_cluster_spec "${PLATFORM}" "${CLUSTER}")" || exit 1
 if [[ "${PLATFORM}" == "kind" ]]; then
-  CLUSTER="${CLUSTER:-dev}"
   # shellcheck disable=SC2086
   "${REPO_ROOT}/scripts/infra/kind/down.sh" ${YES} --cluster "${CLUSTER}"
   k8s_plat_s3_offer
   exit 0
 fi
-
-# shellcheck source=scripts/lib/cluster-config.sh
-source "${REPO_ROOT}/scripts/lib/cluster-config.sh"
-k8s_plat_require_cluster_spec "${PLATFORM}" "${CLUSTER}" || exit 1
 # shellcheck disable=SC2086
 "${REPO_ROOT}/scripts/infra/${PLATFORM}/down.sh" ${YES} --cluster "${CLUSTER}"
 k8s_plat_s3_offer

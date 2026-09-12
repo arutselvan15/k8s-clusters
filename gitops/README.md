@@ -4,7 +4,7 @@ Platform workloads in Git, synced by Argo CD (Day 1). Do not fork this tree per 
 
 ```bash
 git push origin main
-source scripts/lib/kubeconfig-setup.sh sensitive/kind/kubeconfig   # or sensitive/<env>/<cluster_name>/kubeconfig
+source scripts/lib/kubeconfig-setup.sh sensitive/kind/<cluster_name>/kubeconfig   # or sensitive/<env>/<cluster_name>/kubeconfig
 ./scripts/gitops/start.sh dev
 ```
 
@@ -118,7 +118,7 @@ git push
 ### 3. Start GitOps (Day 2)
 
 ```bash
-source scripts/lib/kubeconfig-setup.sh sensitive/kind/kubeconfig
+source scripts/lib/kubeconfig-setup.sh sensitive/kind/<cluster_name>/kubeconfig
 ./scripts/gitops/start.sh dev
 ```
 

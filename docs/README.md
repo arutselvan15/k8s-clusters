@@ -44,7 +44,7 @@ docs/
 ./scripts/infra/up.sh openstack k8s-ocp  && ./scripts/infra/kubeadm/up.sh openstack k8s-ocp
 
 # Same from here on (kubeconfig path is the only difference)
-source scripts/lib/kubeconfig-setup.sh sensitive/kind/kubeconfig   # or sensitive/<env>/<cluster_name>/kubeconfig
+source scripts/lib/kubeconfig-setup.sh sensitive/kind/<cluster_name>/kubeconfig   # or sensitive/<env>/<cluster_name>/kubeconfig
 ./bootstrap/bootstrap.sh dev
 git push origin main
 ./scripts/gitops/start.sh dev

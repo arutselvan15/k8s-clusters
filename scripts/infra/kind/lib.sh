@@ -12,7 +12,7 @@ K8S_PLAT_KIND_ENV_DIR="${REPO_ROOT}/infra/terraform/environments/kind"
 K8S_TF_VAR_ARGS=()
 
 k8s_plat_kind_bind() {
-  local spec="${1:-dev}"
+  local spec="${1:-}"
   k8s_plat_resolve_cluster_config kind "${spec}" || return 1
   k8s_plat_apply_cluster_outputs
 }
@@ -37,20 +37,14 @@ k8s_plat_load_kind_vars() {
     -var "kubernetes_version=${k8s_ver}"
     -var "control_plane_nodes=${cp_nodes}"
     -var "worker_nodes=${workers}"
-    -var "kubeconfig_path=${K8S_PLAT_KIND_KUBECONFIG}"
+    -var "kubeconfig_path=${K8S_PLAT_CLUSTER_KUBECONFIG}"
     -var "http_host_port=${http_port}"
     -var "https_host_port=${https_port}"
   )
 }
 
 k8s_plat_kind_terraform_init() {
-  local env_dir="${K8S_PLAT_KIND_ENV_DIR}"
-  mkdir -p "${K8S_PLAT_KIND_CLUSTER_DIR}"
-  if [[ -f "${env_dir}/terraform.tfstate" && ! -f "${K8S_PLAT_KIND_TFSTATE}" ]]; then
-    mv "${env_dir}/terraform.tfstate" "${K8S_PLAT_KIND_TFSTATE}"
-    echo "==> Moved Terraform state to ${K8S_PLAT_KIND_TFSTATE}"
-  fi
-  terraform init -input=false -reconfigure -backend-config="path=${K8S_PLAT_KIND_TFSTATE}"
+  k8s_plat_terraform_init "${K8S_PLAT_KIND_ENV_DIR}"
 }
 
 k8s_plat_docker_ok() {

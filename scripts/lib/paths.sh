@@ -4,6 +4,10 @@
 
 : "${REPO_ROOT:?REPO_ROOT must be set before sourcing paths.sh}"
 
+# Re-exec the calling CLI if this file was sourced from `sh script` (macOS posix bash).
+# shellcheck source=scripts/lib/ensure-bash.sh
+. "${REPO_ROOT}/scripts/lib/ensure-bash.sh"
+
 K8S_PLAT_CLUSTER_INPUT_DIR="${REPO_ROOT}/clusters"
 K8S_PLAT_SENSITIVE_DIR="${REPO_ROOT}/sensitive"
 K8S_PLAT_BACKUP_YAML="${K8S_PLAT_CLUSTER_INPUT_DIR}/backup.yaml"
@@ -13,10 +17,8 @@ K8S_PLAT_AWS_CREDENTIALS="${K8S_PLAT_SENSITIVE_DIR}/aws/credentials"
 K8S_PLAT_AWS_CLI_CONF="${K8S_PLAT_SENSITIVE_DIR}/aws/cli.conf"
 K8S_PLAT_OS_CLOUDS="${K8S_PLAT_SENSITIVE_DIR}/openstack/clouds.yaml"
 
-# --- Kind outputs ---
-K8S_PLAT_KIND_CLUSTER_DIR="${K8S_PLAT_SENSITIVE_DIR}/kind"
-K8S_PLAT_KIND_KUBECONFIG="${K8S_PLAT_KIND_CLUSTER_DIR}/kubeconfig"
-K8S_PLAT_KIND_TFSTATE="${K8S_PLAT_KIND_CLUSTER_DIR}/terraform.tfstate"
+# --- Kind platform dir (per-cluster outputs: sensitive/kind/<cluster_name>/) ---
+K8S_PLAT_KIND_DIR="${K8S_PLAT_SENSITIVE_DIR}/kind"
 
 # Move leftover secrets/outputs into sensitive/. Does not move committed cluster YAML.
 k8s_plat_migrate_to_sensitive() {
@@ -40,7 +42,7 @@ k8s_plat_migrate_to_sensitive() {
 
   for parent in "${REPO_ROOT}/clusters" "${REPO_ROOT}/sensitive/clusters"; do
     [[ -d "${parent}" ]] || continue
-    while IFS= read -r src; do
+    for src in "${parent}"/*; do
       [[ -d "${src}" ]] || continue
       name="$(basename "${src}")"
       case "${name}" in
@@ -54,12 +56,12 @@ k8s_plat_migrate_to_sensitive() {
         mv "${src}" "${dest}"
         echo "==> Moved ${src} -> ${dest}"
       fi
-    done < <(find "${parent}" -mindepth 1 -maxdepth 1 -type d 2>/dev/null)
+    done
   done
 
   # Flattened leftovers: sensitive/<cluster_name> -> sensitive/<env>/<cluster_name>
   if [[ -d "${K8S_PLAT_SENSITIVE_DIR}" ]]; then
-    while IFS= read -r src; do
+    for src in "${K8S_PLAT_SENSITIVE_DIR}"/*; do
       [[ -d "${src}" ]] || continue
       name="$(basename "${src}")"
       case "${name}" in
@@ -77,7 +79,7 @@ k8s_plat_migrate_to_sensitive() {
         mv "${src}" "${dest}"
         echo "==> Moved ${src} -> ${dest}"
       fi
-    done < <(find "${K8S_PLAT_SENSITIVE_DIR}" -mindepth 1 -maxdepth 1 -type d 2>/dev/null)
+    done
   fi
 }
 

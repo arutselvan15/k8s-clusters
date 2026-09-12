@@ -8,6 +8,12 @@
 #   ./scripts/sensitive/s3.sh pull
 #
 # infra/up.sh, infra/down.sh, kubeadm/up.sh, and kubeadm/reset.sh call "offer".
+#
+# `sh script` on macOS is bash --posix; re-exec so the rest of this file runs.
+
+if [ -z "${BASH_VERSION:-}" ] || [ -n "${POSIXLY_CORRECT:-}" ]; then
+  exec /usr/bin/env bash "$0" "$@"
+fi
 
 set -euo pipefail
 
@@ -102,13 +108,15 @@ cmd_push() {
   k8s_plat_backup_load
   "${REPO_ROOT}/scripts/lib/require-tools.sh" aws
   mkdir -p "${K8S_PLAT_SENSITIVE_DIR}"
-  local extra=()
-  if [[ -n "${PRUNE}" ]]; then
-    extra+=(--delete)
-  fi
   echo "==> Push ${K8S_PLAT_SENSITIVE_DIR}/ -> $(k8s_plat_backup_uri)"
-  aws s3 sync "${K8S_PLAT_SENSITIVE_DIR}/" "$(k8s_plat_backup_uri)" \
-    --sse AES256 --region "${BACKUP_REGION}" "${extra[@]}"
+  # Bash 3.2 + set -u: empty "${extra[@]}" is unbound. Do not use an empty array.
+  if [[ -n "${PRUNE}" ]]; then
+    aws s3 sync "${K8S_PLAT_SENSITIVE_DIR}/" "$(k8s_plat_backup_uri)" \
+      --sse AES256 --region "${BACKUP_REGION}" --delete
+  else
+    aws s3 sync "${K8S_PLAT_SENSITIVE_DIR}/" "$(k8s_plat_backup_uri)" \
+      --sse AES256 --region "${BACKUP_REGION}"
+  fi
   echo "==> Push complete. Object contents are not printed."
 }
 
@@ -162,12 +170,12 @@ cmd_pull() {
   echo "==> Pull $(k8s_plat_backup_uri) -> ${K8S_PLAT_SENSITIVE_DIR}/"
   aws s3 sync "$(k8s_plat_backup_uri)" "${K8S_PLAT_SENSITIVE_DIR}/" --region "${BACKUP_REGION}"
   local f
-  while IFS= read -r -d '' f; do
-    chmod 600 "${f}" || true
-  done < <(find "${K8S_PLAT_SENSITIVE_DIR}" -type f \( \
+  find "${K8S_PLAT_SENSITIVE_DIR}" -type f \( \
     -name credentials -o -name clouds.yaml -o -name '*.pem' -o -name kubeconfig \
     -o -name cluster.env -o -name terraform.tfstate -o -name '*.tfstate*' \
-    \) -print0 2>/dev/null)
+    \) -print0 2>/dev/null | while IFS= read -r -d '' f; do
+    chmod 600 "${f}" || true
+  done
   echo "==> Pull complete. chmod 600 applied to keys, kubeconfig, and state."
 }
 

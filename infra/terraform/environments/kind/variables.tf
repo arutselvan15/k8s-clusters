@@ -1,6 +1,6 @@
 variable "cluster_name" {
   type        = string
-  description = "Kind cluster name (dev, stg, or prod). Do not prefix with kind-."
+  description = "Kind cluster name (matches clusters/kind/<id>/config.yaml). Do not prefix with kind-."
 }
 
 variable "kubernetes_version" {
@@ -20,7 +20,7 @@ variable "worker_nodes" {
 
 variable "kubeconfig_path" {
   type        = string
-  description = "Absolute path for the kubeconfig file (sensitive/kind/kubeconfig)."
+  description = "Absolute path for the kubeconfig file (sensitive/kind/<cluster_name>/kubeconfig)."
 }
 
 variable "http_host_port" {

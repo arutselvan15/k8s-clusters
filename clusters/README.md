@@ -6,7 +6,7 @@ One directory per cluster. **Do not put keys, PEM, kubeconfig, or Terraform stat
 clusters/
 ├── backup.yaml                      # S3 bucket name for ./scripts/sensitive/s3.sh
 ├── kind/
-│   └── dev/config.yaml           # ./scripts/infra/up.sh kind   (or kind dev)
+│   └── k8s-kind/config.yaml      # ./scripts/infra/up.sh kind   (or kind k8s-kind)
 ├── aws/
 │   └── k8s-aws/config.yaml       # ./scripts/infra/up.sh aws k8s-aws
 └── openstack/
@@ -14,7 +14,7 @@ clusters/
     └── k8s-ocp/config.yaml       # ./scripts/infra/up.sh openstack k8s-ocp
 ```
 
-CLI id = directory name. `cluster_name` in the YAML should match. AWS/OpenStack nodes: `{cluster_name}-cp`, `{cluster_name}-wk-N`. Kind cluster name is `dev`. Outputs: `sensitive/kind/` or `sensitive/<aws|openstack>/<cluster_name>/`.
+CLI id = directory name. `cluster_name` in the YAML should match. AWS/OpenStack nodes: `{cluster_name}-cp`, `{cluster_name}-wk-N`. Outputs: `sensitive/<platform>/<cluster_name>/`.
 
 ## Add a cluster
 

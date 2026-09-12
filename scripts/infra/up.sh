@@ -4,6 +4,12 @@
 #   ./scripts/infra/up.sh kind
 #   ./scripts/infra/up.sh aws [cluster]
 #   ./scripts/infra/up.sh openstack [cluster]
+#
+# `sh script` on macOS is bash --posix; re-exec so arrays and [[ ]] work.
+
+if [ -z "${BASH_VERSION:-}" ] || [ -n "${POSIXLY_CORRECT:-}" ]; then
+  exec /usr/bin/env bash "$0" "$@"
+fi
 
 set -euo pipefail
 
@@ -14,17 +20,19 @@ CLUSTER=""
 
 # shellcheck source=scripts/lib/paths.sh
 source "${REPO_ROOT}/scripts/lib/paths.sh"
+# shellcheck source=scripts/lib/cluster-config.sh
+source "${REPO_ROOT}/scripts/lib/cluster-config.sh"
 
 usage() {
   cat <<EOF
 Usage: $(basename "$0") [kind|aws|openstack] [cluster] [-y]
 
-  kind         ./scripts/infra/kind/up.sh [cluster]   (default id: dev)
+  kind         ./scripts/infra/kind/up.sh [cluster]
   aws          ./scripts/infra/aws/up.sh [cluster]
   openstack    ./scripts/infra/openstack/up.sh [cluster]
 
-  cluster     config id (required for aws/openstack; kind defaults to dev)
-              Directory under clusters/<platform>/, e.g. k8s-aws or dev
+  cluster     config id under clusters/<platform>/ (e.g. k8s-kind, k8s-aws).
+              Optional when that platform has exactly one config dir.
 
   -y, --yes   pass through to the platform script
   -h, --help
@@ -68,17 +76,13 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
+CLUSTER="$(k8s_plat_effective_cluster_spec "${PLATFORM}" "${CLUSTER}")" || exit 1
 if [[ "${PLATFORM}" == "kind" ]]; then
-  CLUSTER="${CLUSTER:-dev}"
   # shellcheck disable=SC2086
   "${REPO_ROOT}/scripts/infra/kind/up.sh" ${YES} --cluster "${CLUSTER}"
   k8s_plat_s3_offer
   exit 0
 fi
-
-# shellcheck source=scripts/lib/cluster-config.sh
-source "${REPO_ROOT}/scripts/lib/cluster-config.sh"
-k8s_plat_require_cluster_spec "${PLATFORM}" "${CLUSTER}" || exit 1
 # shellcheck disable=SC2086
 "${REPO_ROOT}/scripts/infra/${PLATFORM}/up.sh" ${YES} --cluster "${CLUSTER}"
 k8s_plat_s3_offer

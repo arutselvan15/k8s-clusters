@@ -10,7 +10,8 @@ sensitive/
 ├── openstack/
 │   ├── clouds.yaml
 │   └── k8s-ocp/
-└── kind/                    # kubeconfig + terraform.tfstate
+├── kind/
+│   └── k8s-kind/          # kubeconfig, terraform.tfstate (removed by down.sh)
 ```
 
 Cluster YAML stays in [`clusters/`](../clusters/README.md) and is committed.

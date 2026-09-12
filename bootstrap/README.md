@@ -3,7 +3,7 @@
 Install **Argo CD** with Helm, then apply repo-creds and repository Secrets. Platform apps are Day 2 ([`../gitops/`](../gitops/README.md)).
 
 ```bash
-source scripts/lib/kubeconfig-setup.sh sensitive/kind/kubeconfig   # or sensitive/<env>/<cluster_name>/kubeconfig
+source scripts/lib/kubeconfig-setup.sh sensitive/kind/<cluster_name>/kubeconfig   # or sensitive/<env>/<cluster_name>/kubeconfig
 ./bootstrap/bootstrap.sh dev
 ```
 
@@ -49,13 +49,13 @@ Details: [`env/README.md`](env/README.md). Repo manifests: [`argocd/repos/README
 Kubeconfig (cluster targeting) is separate:
 
 ```bash
-source scripts/lib/kubeconfig-setup.sh sensitive/kind/kubeconfig
+source scripts/lib/kubeconfig-setup.sh sensitive/kind/<cluster_name>/kubeconfig
 ```
 
 ## Run Day 1
 
 ```bash
-source scripts/lib/kubeconfig-setup.sh sensitive/kind/kubeconfig
+source scripts/lib/kubeconfig-setup.sh sensitive/kind/<cluster_name>/kubeconfig
 ./bootstrap/bootstrap.sh dev          # or omit overlay → ARGOCD_OVERLAY / dev
 # equivalent: ./bootstrap/argocd/install.sh dev
 ```

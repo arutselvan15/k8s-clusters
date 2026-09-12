@@ -68,7 +68,7 @@ Index: [`docs/README.md`](./README.md) · Model: [`platform-lifecycle.md`](./pla
 ./scripts/infra/up.sh openstack k8s-ocp && ./scripts/infra/kubeadm/up.sh openstack k8s-ocp
 
 # Day 1 + 2 — same
-source scripts/lib/kubeconfig-setup.sh sensitive/kind/kubeconfig   # or sensitive/<env>/<cluster_name>/kubeconfig
+source scripts/lib/kubeconfig-setup.sh sensitive/kind/<cluster_name>/kubeconfig   # or sensitive/<env>/<cluster_name>/kubeconfig
 ./bootstrap/bootstrap.sh dev
 git push origin main
 ./scripts/gitops/start.sh dev

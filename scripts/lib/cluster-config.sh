@@ -24,13 +24,13 @@ k8s_plat_list_cluster_ids() {
   local dir="${K8S_PLAT_CLUSTER_INPUT_DIR}/${platform}"
   local d yaml
   [[ -d "${dir}" ]] || return 0
-  while IFS= read -r d; do
+  for d in "${dir}"/*; do
     [[ -d "${d}" ]] || continue
     yaml="$(k8s_plat_cluster_yaml_in_dir "${d}" 2>/dev/null || true)"
     if [[ -n "${yaml}" ]]; then
       basename "${d}"
     fi
-  done < <(find "${dir}" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort)
+  done
 }
 
 k8s_plat_require_cluster_spec() {
@@ -48,6 +48,31 @@ k8s_plat_require_cluster_spec() {
   else
     echo "  Add clusters/${platform}/<id>/config.yaml" >&2
   fi
+  return 1
+}
+
+# If spec is empty and the platform has exactly one config dir, use it.
+k8s_plat_effective_cluster_spec() {
+  local platform="$1"
+  local spec="${2:-}"
+  local ids
+  local count
+  if [[ -n "${spec}" ]]; then
+    printf '%s' "${spec}"
+    return 0
+  fi
+  ids="$(k8s_plat_list_cluster_ids "${platform}")"
+  if [[ -z "${ids}" ]]; then
+    k8s_plat_require_cluster_spec "${platform}" ""
+    return 1
+  fi
+  count="$(printf '%s\n' "${ids}" | grep -c .)"
+  if [[ "${count}" == "1" ]]; then
+    echo "==> Using clusters/${platform}/${ids}" >&2
+    printf '%s' "${ids}"
+    return 0
+  fi
+  k8s_plat_require_cluster_spec "${platform}" ""
   return 1
 }
 
@@ -117,30 +142,71 @@ k8s_plat_apply_cluster_outputs() {
   fi
 
   K8S_PLAT_CLUSTER_NAME="${name}"
+  K8S_PLAT_CLUSTER_DIR="${K8S_PLAT_SENSITIVE_DIR}/${platform}/${name}"
+  K8S_PLAT_CLUSTER_KUBECONFIG="${K8S_PLAT_CLUSTER_DIR}/kubeconfig"
+  K8S_PLAT_TFSTATE="${K8S_PLAT_CLUSTER_DIR}/terraform.tfstate"
+
   if [[ "${platform}" == "kind" ]]; then
-    K8S_PLAT_CLUSTER_DIR="${K8S_PLAT_SENSITIVE_DIR}/kind"
-    K8S_PLAT_CLUSTER_KUBECONFIG="${K8S_PLAT_KIND_KUBECONFIG}"
+    k8s_plat_migrate_kind_flat_outputs "${name}"
     K8S_PLAT_CLUSTER_SSH_KEY=""
     K8S_PLAT_CLUSTER_ENV=""
     K8S_PLAT_CLUSTER_KNOWN_HOSTS=""
-    K8S_PLAT_TFSTATE="${K8S_PLAT_KIND_TFSTATE}"
     mkdir -p "${K8S_PLAT_CLUSTER_DIR}"
     echo "==> Cluster ${K8S_PLAT_CLUSTER_NAME} (config ${yaml})"
     echo "    outputs ${K8S_PLAT_CLUSTER_DIR}"
     return 0
   fi
 
-  K8S_PLAT_CLUSTER_DIR="${K8S_PLAT_SENSITIVE_DIR}/${platform}/${name}"
-  K8S_PLAT_CLUSTER_KUBECONFIG="${K8S_PLAT_CLUSTER_DIR}/kubeconfig"
   K8S_PLAT_CLUSTER_SSH_KEY="${K8S_PLAT_CLUSTER_DIR}/ssh.pem"
   K8S_PLAT_CLUSTER_ENV="${K8S_PLAT_CLUSTER_DIR}/cluster.env"
   K8S_PLAT_CLUSTER_KNOWN_HOSTS="${K8S_PLAT_CLUSTER_DIR}/known_hosts"
-  K8S_PLAT_TFSTATE="${K8S_PLAT_CLUSTER_DIR}/terraform.tfstate"
 
   mkdir -p "${K8S_PLAT_CLUSTER_DIR}"
   echo "==> Cluster ${K8S_PLAT_CLUSTER_NAME} (config ${yaml})"
   echo "    nodes ${K8S_PLAT_CLUSTER_NAME}-cp / ${K8S_PLAT_CLUSTER_NAME}-wk-N"
   echo "    outputs ${K8S_PLAT_CLUSTER_DIR}"
+}
+
+# leftover: sensitive/kind/{kubeconfig,tfstate} -> sensitive/kind/<cluster_name>/
+k8s_plat_migrate_kind_flat_outputs() {
+  local name="$1"
+  local plat="${K8S_PLAT_KIND_DIR:-${K8S_PLAT_SENSITIVE_DIR}/kind}"
+  local dest="${plat}/${name}"
+  local f
+  [[ -d "${plat}" ]] || return 0
+  for f in kubeconfig terraform.tfstate terraform.tfstate.backup; do
+    if [[ -f "${plat}/${f}" && ! -e "${dest}/${f}" ]]; then
+      mkdir -p "${dest}"
+      mv "${plat}/${f}" "${dest}/${f}"
+      echo "==> Moved ${plat}/${f} -> ${dest}/${f}"
+    fi
+  done
+}
+
+# After terraform destroy succeeds (or there is nothing left to destroy):
+# remove this cluster's outputs. Do not archive locally — S3 (and bucket
+# versioning) is the backup. Never touches aws/credentials, cli.conf, or
+# openstack/clouds.yaml.
+k8s_plat_purge_cluster_outputs() {
+  local dir="${K8S_PLAT_CLUSTER_DIR:?cluster dir not set}"
+  local f
+  [[ -d "${dir}" ]] || return 0
+  for f in \
+    "${K8S_PLAT_CLUSTER_KUBECONFIG:-}" \
+    "${K8S_PLAT_CLUSTER_ENV:-}" \
+    "${K8S_PLAT_CLUSTER_KNOWN_HOSTS:-}" \
+    "${K8S_PLAT_CLUSTER_SSH_KEY:-}" \
+    "${K8S_PLAT_TFSTATE:-}" \
+    "${K8S_PLAT_TFSTATE:-}.backup"; do
+    [[ -n "${f}" && "${f}" != ".backup" && -e "${f}" ]] || continue
+    rm -f "${f}"
+  done
+  if [[ -d "${dir}" && -z "$(ls -A "${dir}" 2>/dev/null)" ]]; then
+    rmdir "${dir}"
+    echo "==> Removed ${dir}"
+  else
+    echo "==> Cleared cluster outputs under ${dir}"
+  fi
 }
 
 k8s_plat_terraform_init() {

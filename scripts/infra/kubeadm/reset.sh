@@ -3,6 +3,10 @@
 # Same args as Day 0: ./scripts/infra/kubeadm/reset.sh aws|openstack <cluster>
 # Streams remote/reset.sh over SSH stdin (no scp).
 
+if [ -z "${BASH_VERSION:-}" ] || [ -n "${POSIXLY_CORRECT:-}" ]; then
+  exec /usr/bin/env bash "$0" "$@"
+fi
+
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"

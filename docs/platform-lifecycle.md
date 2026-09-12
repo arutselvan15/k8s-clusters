@@ -26,7 +26,7 @@ Index: [README.md](./README.md) · Resume: [continue.md](./continue.md)
 | **Day 1** | Can Git manage the cluster? | `bootstrap/` — same Helm install and repo Secrets | Overlay values (hostname, ingress) if a cluster needs them |
 | **Day 2** | What runs on the cluster? | `gitops/` apps, App of Apps, sync waves | Cluster folder / Helm values (e.g. Kind `hostPort` vs cloud `LoadBalancer`) |
 
-Kubeconfig path is the only required switch after Day 0: `sensitive/kind/kubeconfig`, or `sensitive/<env>/<cluster_name>/kubeconfig` for AWS/OpenStack.
+Kubeconfig path is the only required switch after Day 0: `sensitive/<platform>/<cluster_name>/kubeconfig`.
 
 ## What does not belong where
 
@@ -38,7 +38,7 @@ Kubeconfig path is the only required switch after Day 0: `sensitive/kind/kubecon
 
 | Environment | Dispatcher | After Terraform | Kubeconfig |
 |-------------|------------|-----------------|------------|
-| `kind` | `./scripts/infra/up.sh kind` | Cluster is ready | `sensitive/kind/kubeconfig` |
+| `kind` | `./scripts/infra/up.sh kind` | Cluster is ready | `sensitive/kind/<cluster_name>/kubeconfig` |
 | `ec2` | `./scripts/infra/up.sh aws k8s-aws` | `./scripts/infra/kubeadm/up.sh aws k8s-aws` | `sensitive/<env>/<cluster_name>/kubeconfig` |
 | `openstack` | `./scripts/infra/up.sh openstack k8s-ocp` | `./scripts/infra/kubeadm/up.sh openstack k8s-ocp` | `sensitive/<env>/<cluster_name>/kubeconfig` |
 
