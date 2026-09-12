@@ -17,7 +17,7 @@ brew install kyverno/tap/chainsaw
 ## Run all policy tests
 
 ```bash
-source scripts/lib/kubeconfig-setup.sh clusters/kind/kubeconfig
+source scripts/lib/kubeconfig-setup.sh sensitive/kind/kubeconfig
 ./scripts/gitops/chainsaw.sh
 ```
 

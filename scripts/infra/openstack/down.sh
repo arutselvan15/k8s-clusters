@@ -7,7 +7,7 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 ENV_DIR="${REPO_ROOT}/infra/terraform/environments/openstack"
 AUTO_APPROVE=""
-CLUSTER_SPEC="default"
+CLUSTER_SPEC=""
 K8S_TF_VAR_ARGS=()
 
 # shellcheck source=scripts/lib/os-env.sh
@@ -49,7 +49,7 @@ if [[ ! -d "$ENV_DIR" ]]; then
   exit 1
 fi
 
-k8s_plat_resolve_cluster_config openstack "${CLUSTER_SPEC}" 0
+k8s_plat_resolve_cluster_config openstack "${CLUSTER_SPEC}"
 k8s_plat_apply_cluster_outputs
 
 if [[ ! -f "${K8S_PLAT_TFSTATE}" && ! -d "${ENV_DIR}/.terraform" ]]; then

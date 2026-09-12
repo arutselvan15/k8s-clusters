@@ -42,16 +42,18 @@ if [[ ! -d "$ENV_DIR" ]]; then
   exit 1
 fi
 
-if [[ ! -d "${ENV_DIR}/.terraform" ]]; then
-  echo "No Terraform state in ${ENV_DIR}; nothing to destroy."
+if [[ ! -f "${K8S_PLAT_KIND_TFSTATE}" && ! -d "${ENV_DIR}/.terraform" ]]; then
+  echo "No Terraform state for Kind; nothing to destroy."
   exit 0
 fi
 
 echo "==> Destroy Kind: ${ENV_DIR}"
 "$REPO_ROOT/scripts/lib/require-tools.sh" terraform
+k8s_plat_migrate_to_sensitive
 k8s_plat_prepare_kind_runtime
 
 cd "$ENV_DIR"
+k8s_plat_kind_terraform_init
 # shellcheck disable=SC2086
 terraform destroy -input=false $AUTO_APPROVE
 

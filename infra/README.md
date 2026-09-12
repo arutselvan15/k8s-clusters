@@ -1,78 +1,62 @@
 # Day 0 — Infrastructure
 
-Provision a Kubernetes cluster with **Terraform only**. Nothing here installs Argo CD, ingress, or other platform apps.
+Provision a Kubernetes **API**. This tree is Terraform only. Argo CD and apps are [bootstrap](../bootstrap/README.md) and [gitops](../gitops/README.md).
 
 ```text
 infra/terraform/
 ├── modules/cluster-kind/
 └── environments/
-    ├── kind/            # local Kind
-    ├── ec2/             # AWS VMs → kubeadm
-    └── openstack/       # OpenStack VMs → kubeadm
+    ├── kind/         # laptop
+    ├── ec2/          # AWS VMs → kubeadm
+    └── openstack/    # OpenStack VMs → kubeadm
 ```
 
-```bash
-./scripts/infra/up.sh kind
-./scripts/infra/up.sh aws default
-./scripts/infra/up.sh openstack default
-```
-
-## Environments
-
-| Environment | What Terraform creates | Kubeconfig |
-|-------------|------------------------|------------|
-| [`terraform/environments/kind`](terraform/environments/kind/) | Kind cluster `dev`, host ports 8080/8443 | `clusters/kind/kubeconfig` |
-| [`terraform/environments/ec2`](terraform/environments/ec2/) | VPC, SG, EC2, SSH key ([STEPS.md](terraform/environments/ec2/STEPS.md)) | `clusters/<cluster_name>/kubeconfig` after kubeadm |
-| [`terraform/environments/openstack`](terraform/environments/openstack/) | Ports, VMs on an existing Neutron net ([STEPS.md](terraform/environments/openstack/STEPS.md)) | `clusters/<cluster_name>/kubeconfig` after kubeadm |
-
-kubeadm is **not** Terraform. After `./scripts/infra/up.sh aws default` or `openstack default`, run `./scripts/infra/kubeadm/up.sh default`.
-
-Kind cluster name is **`dev`** (not `kind-dev`) so the kubeconfig context stays readable.
+Commands: [`../scripts/infra/`](../scripts/README.md). Inputs: [`../clusters/`](../clusters/README.md). Outputs: [`../sensitive/`](../sensitive/README.md).
 
 ## Kind
 
 ```bash
 ./scripts/infra/up.sh kind
-source scripts/lib/kubeconfig-setup.sh clusters/kind/kubeconfig
+source scripts/lib/kubeconfig-setup.sh sensitive/kind/kubeconfig
 ```
 
-Re-apply is safe. **Day 0 + Day 1:** `./scripts/bootstrap/up.sh`
+Day 0 + Day 1: `./scripts/bootstrap/up.sh`. Teardown: `./scripts/infra/down.sh kind`
 
-Teardown: `./scripts/infra/down.sh kind`
+Host ports **8080 → 80** and **8443 → 443**. Cluster name is **`dev`**.
 
-## AWS / OpenStack
+## AWS
+
+Keys: `sensitive/aws/credentials` and `sensitive/aws/cli.conf`. Knobs: [`../clusters/aws/k8s-aws/config.yaml`](../clusters/aws/k8s-aws/config.yaml).
 
 ```bash
-./scripts/infra/up.sh aws default && ./scripts/infra/kubeadm/up.sh default
-source scripts/lib/kubeconfig-setup.sh clusters/k8s-aws/kubeconfig
-
-./scripts/infra/up.sh openstack default && ./scripts/infra/kubeadm/up.sh default
-source scripts/lib/kubeconfig-setup.sh clusters/k8s-os/kubeconfig
+./scripts/infra/up.sh aws k8s-aws
+./scripts/infra/kubeadm/up.sh aws k8s-aws
+source scripts/lib/kubeconfig-setup.sh sensitive/aws/k8s-aws/kubeconfig
 ```
 
-AWS: `config/aws/credentials` + `cli.conf` + `clusters/*.yaml` (gitignored).  
-OpenStack: `config/openstack/clouds.yaml` + `clusters/*.yaml` (gitignored). Terraform **looks up** `network_name`; it does not create or destroy that network.
+Checklist: [terraform/environments/ec2/STEPS.md](terraform/environments/ec2/STEPS.md). Teardown: `./scripts/infra/down.sh aws k8s-aws -y`
 
-Inputs vs outputs: [config/README.md](../config/README.md) · [clusters/README.md](../clusters/README.md)
+## OpenStack
 
-Teardown: `./scripts/infra/down.sh aws default -y` / `./scripts/infra/down.sh openstack default -y`
-
-## Prerequisites
+Auth: `sensitive/openstack/clouds.yaml`. Knobs: [`../clusters/openstack/k8s-ocp/config.yaml`](../clusters/openstack/k8s-ocp/config.yaml) (`image_name`, `node_flavor`, existing `network_name`).
 
 ```bash
-brew install kind kubectl helm gettext terraform
-brew link --force gettext
+./scripts/infra/up.sh openstack k8s-ocp
+./scripts/infra/kubeadm/up.sh openstack k8s-ocp
+source scripts/lib/kubeconfig-setup.sh sensitive/openstack/k8s-ocp/kubeconfig
 ```
 
-`./scripts/lib/require-tools.sh terraform kubectl kind` (Kind) or `terraform aws` (EC2).
+Terraform **looks up** the Neutron network; it does not create or destroy it.
 
-## Next (Day 1)
+Checklist: [terraform/environments/openstack/STEPS.md](terraform/environments/openstack/STEPS.md). Teardown: `./scripts/infra/down.sh openstack k8s-ocp -y`
+
+kubeadm is **not** Terraform. Same scripts on AWS and OpenStack after Day 0 writes `cluster.env`.
+
+## Next
 
 ```bash
-source scripts/lib/kubeconfig-setup.sh clusters/kind/kubeconfig
+source scripts/lib/kubeconfig-setup.sh sensitive/kind/kubeconfig   # or aws / openstack path above
 ./bootstrap/bootstrap.sh dev
 ```
 
-## Docs
-
-[docs/README.md](../docs/README.md) · Day 0 guides: [docs/infra/](../docs/infra/) · Then common [bootstrap](../docs/bootstrap/) and [gitops](../docs/gitops/)
+Guides: [docs/infra/](../docs/infra/)

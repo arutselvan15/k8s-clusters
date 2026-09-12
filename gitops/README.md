@@ -1,8 +1,16 @@
 # Day 2 — GitOps
 
-Platform workloads are declared in Git and synced by **Argo CD** (installed in Day 1). Shell scripts do not install ingress, cert-manager, or apps after bootstrap.
+Platform workloads in Git, synced by Argo CD (Day 1). Do not fork this tree per cloud.
 
-Full reference for this repo: concepts below, then step-by-step **Deploy dev core**.
+```bash
+git push origin main
+source scripts/lib/kubeconfig-setup.sh sensitive/kind/kubeconfig   # or sensitive/<env>/<cluster_name>/kubeconfig
+./scripts/gitops/start.sh dev
+```
+
+When **`argocd-server-tls`** is Ready, re-run **`./bootstrap/bootstrap.sh dev`** → **https://argocd.dev:8443**.
+
+Full reference below. Add an app: values under `apps/` + Application under `clusters/dev/core/applications/`.
 
 ---
 
@@ -110,7 +118,7 @@ git push
 ### 3. Start GitOps (Day 2)
 
 ```bash
-source scripts/lib/kubeconfig-setup.sh clusters/kind/kubeconfig
+source scripts/lib/kubeconfig-setup.sh sensitive/kind/kubeconfig
 ./scripts/gitops/start.sh dev
 ```
 

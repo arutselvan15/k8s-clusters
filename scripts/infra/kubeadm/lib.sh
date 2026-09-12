@@ -10,7 +10,7 @@ k8s_plat_load_inventory() {
 
   if [[ ! -f "${file}" ]]; then
     echo "Inventory not found: ${file}" >&2
-    echo "Run ./scripts/infra/up.sh aws|openstack <cluster> (writes clusters/<cluster_name>/cluster.env)." >&2
+    echo "Run ./scripts/infra/up.sh aws|openstack <cluster> (writes sensitive/<env>/<cluster_name>/cluster.env)." >&2
     return 1
   fi
 

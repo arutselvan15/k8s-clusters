@@ -8,6 +8,16 @@ source "${REPO_ROOT}/scripts/lib/paths.sh"
 
 K8S_PLAT_KIND_ENV_DIR="${REPO_ROOT}/infra/terraform/environments/kind"
 
+k8s_plat_kind_terraform_init() {
+  local env_dir="${K8S_PLAT_KIND_ENV_DIR}"
+  mkdir -p "${K8S_PLAT_KIND_CLUSTER_DIR}"
+  if [[ -f "${env_dir}/terraform.tfstate" && ! -f "${K8S_PLAT_KIND_TFSTATE}" ]]; then
+    mv "${env_dir}/terraform.tfstate" "${K8S_PLAT_KIND_TFSTATE}"
+    echo "==> Moved Terraform state to ${K8S_PLAT_KIND_TFSTATE}"
+  fi
+  terraform init -input=false -reconfigure -backend-config="path=${K8S_PLAT_KIND_TFSTATE}"
+}
+
 k8s_plat_docker_ok() {
   command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1
 }

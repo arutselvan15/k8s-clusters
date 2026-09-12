@@ -1,8 +1,15 @@
 # Day 1 — Bootstrap (GitOps controller)
 
-Install **Argo CD** with Helm, then apply Argo CD **repo-creds** and **repository** Secrets from `argocd/repos/`.
+Install **Argo CD** with Helm, then apply repo-creds and repository Secrets. Platform apps are Day 2 ([`../gitops/`](../gitops/README.md)).
 
-Platform workloads are **Day 2** ([`../gitops/`](../gitops/)).
+```bash
+source scripts/lib/kubeconfig-setup.sh sensitive/kind/kubeconfig   # or sensitive/<env>/<cluster_name>/kubeconfig
+./bootstrap/bootstrap.sh dev
+```
+
+Kind (Day 0 + this step): `./scripts/bootstrap/up.sh`
+
+After GitOps creates **`argocd-server-tls`**, re-run `./bootstrap/bootstrap.sh dev` → **https://argocd.dev:8443**.
 
 ## How it runs
 
@@ -42,13 +49,13 @@ Details: [`env/README.md`](env/README.md). Repo manifests: [`argocd/repos/README
 Kubeconfig (cluster targeting) is separate:
 
 ```bash
-source scripts/lib/kubeconfig-setup.sh clusters/kind/kubeconfig
+source scripts/lib/kubeconfig-setup.sh sensitive/kind/kubeconfig
 ```
 
 ## Run Day 1
 
 ```bash
-source scripts/lib/kubeconfig-setup.sh clusters/kind/kubeconfig
+source scripts/lib/kubeconfig-setup.sh sensitive/kind/kubeconfig
 ./bootstrap/bootstrap.sh dev          # or omit overlay → ARGOCD_OVERLAY / dev
 # equivalent: ./bootstrap/argocd/install.sh dev
 ```

@@ -19,10 +19,10 @@ terraform {
   }
 }
 
-# Project credentials in k8s-platform/config/aws (not ~/.aws). kubeadm on EC2 (not EKS).
+# Project credentials in k8s-platform/sensitive/aws (not ~/.aws). kubeadm on EC2 (not EKS).
 provider "aws" {
   region                   = var.aws_region
   profile                  = var.aws_profile
-  shared_credentials_files = [abspath("${path.root}/../../../../config/aws/credentials")]
-  shared_config_files      = [abspath("${path.root}/../../../../config/aws/cli.conf")]
+  shared_credentials_files = [abspath("${path.root}/../../../../sensitive/aws/credentials")]
+  shared_config_files      = [abspath("${path.root}/../../../../sensitive/aws/cli.conf")]
 }

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Source from aws/up.sh and aws/down.sh. Points AWS CLI and Terraform at
-# config/aws (not ~/.aws). Requires REPO_ROOT.
+# sensitive/aws (not ~/.aws). Requires REPO_ROOT.
 
 : "${REPO_ROOT:?REPO_ROOT must be set before sourcing aws-env.sh}"
 
@@ -32,7 +32,7 @@ k8s_plat_aws_cli_get() {
 k8s_plat_load_provider_vars() {
   local region cluster_name vpc_cidr admin_cidr node_instance_type worker_nodes
   region="$(k8s_plat_aws_cli_get region 2>/dev/null || echo "us-east-1")"
-  cluster_name="${K8S_PLAT_CLUSTER_NAME:-$(k8s_plat_aws_infra_get cluster_name 2>/dev/null || echo "k8s-aws")}"
+  cluster_name="${K8S_PLAT_CLUSTER_NAME:?cluster_name not set; pass a cluster id to up.sh}"
   vpc_cidr="$(k8s_plat_aws_infra_get vpc_cidr 2>/dev/null || echo "10.0.0.0/16")"
   admin_cidr="$(k8s_plat_aws_infra_get admin_cidr 2>/dev/null || echo "0.0.0.0/0")"
   node_instance_type="$(k8s_plat_aws_infra_get node_instance_type 2>/dev/null || echo "t3.medium")"
@@ -40,14 +40,12 @@ k8s_plat_load_provider_vars() {
   echo "==> AWS provider from ${AWS_CONFIG_FILE}: region=${region} profile=${AWS_PROFILE}"
   echo "    cluster_name=${cluster_name} vpc_cidr=${vpc_cidr} admin_cidr=${admin_cidr}"
   echo "    node_instance_type=${node_instance_type} worker_nodes=${worker_nodes}"
-  echo "    prefixes ${K8S_PLAT_CONTROL_PLANE_PREFIX:-cp} / ${K8S_PLAT_WORKER_PREFIX:-wk}"
+  echo "    nodes ${cluster_name}-cp / ${cluster_name}-wk-N"
   echo "    cluster config=${K8S_PLAT_AWS_INFRA_YAML}"
   K8S_TF_VAR_ARGS=(
     -var "aws_region=${region}"
     -var "aws_profile=${AWS_PROFILE}"
     -var "cluster_name=${cluster_name}"
-    -var "control_plane_prefix=${K8S_PLAT_CONTROL_PLANE_PREFIX:-cp}"
-    -var "worker_prefix=${K8S_PLAT_WORKER_PREFIX:-wk}"
     -var "ssh_private_key_path=${K8S_PLAT_CLUSTER_SSH_KEY}"
     -var "vpc_cidr=${vpc_cidr}"
     -var "admin_cidr=${admin_cidr}"
@@ -57,7 +55,8 @@ k8s_plat_load_provider_vars() {
 }
 
 k8s_plat_require_aws_credentials() {
-  mkdir -p "${K8S_PLAT_CONFIG_DIR}/aws" "${K8S_PLAT_CONFIG_DIR}/aws/clusters"
+  k8s_plat_migrate_to_sensitive
+  mkdir -p "${K8S_PLAT_SENSITIVE_DIR}/aws"
 
   if [[ ! -f "${AWS_SHARED_CREDENTIALS_FILE}" ]]; then
     if [[ -f "${HOME}/.aws/credentials" ]]; then
@@ -66,7 +65,7 @@ k8s_plat_require_aws_credentials() {
       echo "==> Copied ~/.aws/credentials -> ${AWS_SHARED_CREDENTIALS_FILE} (gitignored)"
     else
       echo "Missing ${AWS_SHARED_CREDENTIALS_FILE}" >&2
-      echo "  cp ${K8S_PLAT_CONFIG_DIR}/aws/credentials.example ${AWS_SHARED_CREDENTIALS_FILE}" >&2
+      echo "  Create that file (AWS CLI INI) or copy ~/.aws/credentials there." >&2
       echo "  chmod 600 ${AWS_SHARED_CREDENTIALS_FILE}" >&2
       return 1
     fi
@@ -74,8 +73,13 @@ k8s_plat_require_aws_credentials() {
   chmod 600 "${AWS_SHARED_CREDENTIALS_FILE}"
 
   if [[ ! -f "${AWS_CONFIG_FILE}" ]]; then
-    cp "${K8S_PLAT_CONFIG_DIR}/aws/cli.conf.example" "${AWS_CONFIG_FILE}"
-    echo "==> Wrote ${AWS_CONFIG_FILE} from cli.conf.example"
+    mkdir -p "$(dirname "${AWS_CONFIG_FILE}")"
+    cat >"${AWS_CONFIG_FILE}" <<'EOF'
+[default]
+region = us-east-1
+output = json
+EOF
+    echo "==> Wrote ${AWS_CONFIG_FILE} (region us-east-1). Edit if needed."
   fi
 
 }

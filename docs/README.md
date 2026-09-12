@@ -28,7 +28,7 @@ docs/
 | Why the three layers exist | [platform-lifecycle.md](./platform-lifecycle.md) |
 | Tools and kubeconfig habit | [prerequisites.md](./prerequisites.md) |
 | Build a cluster | [infra/](./infra/) — Kind, AWS EC2, or OpenStack |
-| Lab inputs vs generated outputs | [config/README.md](../config/README.md) · [clusters/README.md](../clusters/README.md) |
+| Lab inputs vs generated outputs | [clusters/README.md](../clusters/README.md) · [sensitive/README.md](../sensitive/README.md) |
 | Install Argo CD | [bootstrap/](./bootstrap/) |
 | Platform apps (ingress, certs, policy, …) | [gitops/](./gitops/) |
 | Commands next to the code | [scripts/README.md](../scripts/README.md), [infra/README.md](../infra/README.md), [bootstrap/README.md](../bootstrap/README.md), [gitops/README.md](../gitops/README.md) |
@@ -40,11 +40,11 @@ docs/
 ```bash
 # Day 0 — choose one
 ./scripts/infra/up.sh kind
-./scripts/infra/up.sh aws default        && ./scripts/infra/kubeadm/up.sh default
-./scripts/infra/up.sh openstack default  && ./scripts/infra/kubeadm/up.sh default
+./scripts/infra/up.sh aws k8s-aws        && ./scripts/infra/kubeadm/up.sh aws k8s-aws
+./scripts/infra/up.sh openstack k8s-ocp  && ./scripts/infra/kubeadm/up.sh openstack k8s-ocp
 
 # Same from here on (kubeconfig path is the only difference)
-source scripts/lib/kubeconfig-setup.sh clusters/kind/kubeconfig   # or clusters/<cluster_name>/kubeconfig
+source scripts/lib/kubeconfig-setup.sh sensitive/kind/kubeconfig   # or sensitive/<env>/<cluster_name>/kubeconfig
 ./bootstrap/bootstrap.sh dev
 git push origin main
 ./scripts/gitops/start.sh dev

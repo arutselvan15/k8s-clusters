@@ -7,19 +7,19 @@ Pick **one** environment. After `kubectl get nodes` works, go to [bootstrap](../
 | Environment | Guide | What Terraform creates | Then |
 |-------------|--------|------------------------|------|
 | **Kind** | [kind.md](./kind.md) | Local Kind cluster `dev`, host ports 8080/8443 | Cluster is ready |
-| **AWS EC2** | [aws.md](./aws.md) + [aws-kubeadm.md](./aws-kubeadm.md) | VPC, SG, EC2 | `./scripts/infra/kubeadm/up.sh default` |
-| **OpenStack** | [openstack.md](./openstack.md) | Ports, VMs on an **existing** Neutron net | `./scripts/infra/kubeadm/up.sh default` |
+| **AWS EC2** | [aws.md](./aws.md) + [aws-kubeadm.md](./aws-kubeadm.md) | VPC, SG, EC2 | `./scripts/infra/kubeadm/up.sh aws k8s-aws` |
+| **OpenStack** | [openstack.md](./openstack.md) | Ports, VMs on an **existing** Neutron net | `./scripts/infra/kubeadm/up.sh openstack k8s-ocp` |
 
 ```bash
 ./scripts/infra/up.sh kind
-./scripts/infra/up.sh aws default
-./scripts/infra/up.sh openstack default
+./scripts/infra/up.sh aws k8s-aws
+./scripts/infra/up.sh openstack k8s-ocp
 ```
 
 Code: [`infra/terraform/environments/`](../../infra/terraform/environments/). Dispatcher: [`scripts/infra/up.sh`](../../scripts/infra/up.sh).
 
 kubeadm is **not** Terraform. The same remote scripts install Kubernetes on AWS and OpenStack VMs.
 
-Inputs (`config/`) vs outputs (`clusters/`): [config/README.md](../../config/README.md) · [clusters/README.md](../../clusters/README.md)
+Inputs (`clusters/`) vs outputs (`sensitive/`): [clusters/README.md](../../clusters/README.md) · [sensitive/README.md](../../sensitive/README.md)
 
 **Next (every environment):** [bootstrap](../bootstrap/) → [gitops](../gitops/)

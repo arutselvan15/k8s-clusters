@@ -7,12 +7,12 @@ Learning notes: [docs/infra/openstack.md](../../../../docs/infra/openstack.md). 
 **Apply:** from `k8s-platform/`
 
 ```bash
-./scripts/infra/up.sh openstack default
+./scripts/infra/up.sh openstack k8s-ocp
 # or: ./scripts/infra/openstack/up.sh default
-./scripts/infra/kubeadm/up.sh default
+./scripts/infra/kubeadm/up.sh openstack k8s-ocp
 ```
 
-**Config:** `config/openstack/clouds.yaml` (Keystone auth, gitignored) and `config/openstack/clusters/<id>.yaml` (image, flavor, existing `network_name`).  
+**Config:** `sensitive/openstack/clouds.yaml` (Keystone auth) and `clusters/openstack/<id>/config.yaml` (image, flavor, existing `network_name`).  
 **Code:** [`main.tf`](./main.tf).  
 **Tear down:** `./scripts/infra/openstack/down.sh default -y`
 
@@ -34,7 +34,7 @@ AWS name → OpenStack name: existing tenant net (not a new VPC), security group
 | [5](#step-5--control-plane-vm) | Ubuntu VM on existing net + SSH | in main.tf |
 | [6](#step-6--worker-vms) | `worker_nodes` Ubuntu VMs | in main.tf |
 | [7](#step-7--ssh-and-outputs) | PEM, fixed IPs, inventory | in main.tf |
-| [8](#step-8--kubeadm) | Same kubeadm scripts as AWS | `./scripts/infra/kubeadm/up.sh default` |
+| [8](#step-8--kubeadm) | Same kubeadm scripts as AWS | `./scripts/infra/kubeadm/up.sh openstack k8s-ocp` |
 
 ---
 
@@ -45,18 +45,18 @@ AWS name → OpenStack name: existing tenant net (not a new VPC), security group
 **Created:** Local files only.
 
 ```bash
-cp config/openstack/clouds.yaml.example config/openstack/clouds.yaml
-cp config/openstack/clusters/default.yaml.example config/openstack/clusters/default.yaml
-chmod 600 config/openstack/clouds.yaml
+mkdir -p sensitive/openstack
+cp clusters/openstack/clouds.yaml.example sensitive/openstack/clouds.yaml
+chmod 600 sensitive/openstack/clouds.yaml
 ```
 
-Edit `clouds.yaml`: `auth_url`, username/password **or** application credentials, `project_name`, `region_name`.  
-Edit `config/openstack/clusters/default.yaml`: `image_name`, `node_flavor`, `network_name` (existing Neutron network, e.g. `tenant-internal-direct-net`).
+Edit `sensitive/openstack/clouds.yaml`: `auth_url`, username/password **or** application credentials, `project_name`, `region_name`.  
+Edit `clusters/openstack/k8s-ocp/config.yaml`: `image_name`, `node_flavor`, `network_name` (existing Neutron network, e.g. `tenant-internal-direct-net`).
 
 If the OpenStack CLI is installed:
 
 ```bash
-export OS_CLIENT_CONFIG_FILE=$PWD/config/openstack/clouds.yaml OS_CLOUD=lab
+export OS_CLIENT_CONFIG_FILE=$PWD/sensitive/openstack/clouds.yaml OS_CLOUD=lab
 openstack image list
 openstack flavor list
 openstack network list
@@ -70,7 +70,7 @@ Pick an Ubuntu image, a flavor with ~2–4 vCPU / 8 GiB RAM, and the **existing*
 
 ## Step 1 — Terraform can talk to OpenStack
 
-**Learn:** Provider reads `OS_CLIENT_CONFIG_FILE` + `cloud:` (from `config/openstack/clusters/default.yaml`). `data` asks Keystone/Glance/Neutron; `resource` creates objects you pay for (VMs, floating IPs).
+**Learn:** Provider reads `OS_CLIENT_CONFIG_FILE` + `cloud:` (from `clusters/openstack/k8s-ocp/config.yaml`). `data` asks Keystone/Glance/Neutron; `resource` creates objects you pay for (VMs, floating IPs).
 
 **Created:** No extra quota yet. Data sources: auth scope, image, flavor, existing network.
 
@@ -82,7 +82,7 @@ Pick an Ubuntu image, a flavor with ~2–4 vCPU / 8 GiB RAM, and the **existing*
 
 ## Step 2 — Network
 
-**Learn:** On cloud-rtp-1 the project already has a tenant network. Terraform **does not** create another (quota is typically 1). `network_name` in `config/openstack/clusters/default.yaml` is looked up as `data.openstack_networking_network_v2`.
+**Learn:** On cloud-rtp-1 the project already has a tenant network. Terraform **does not** create another (quota is typically 1). `network_name` in `clusters/openstack/k8s-ocp/config.yaml` is looked up as `data.openstack_networking_network_v2`.
 
 **Created:** nothing. Uses `tenant-internal-direct-net`.
 
@@ -111,17 +111,17 @@ Same intent as AWS:
 
 **Learn:** Nova instance, boot **volume**. The port sits on `tenant-internal-direct-net`. The address your laptop SSHs to is that **fixed IP** (no floating IP). You need to be on a network that can reach that tenant net (typical on Cisco campus/VPN).
 
-User is **`ssh_user`** from config (`ubuntu` for Ubuntu images). Key: **`clusters/k8s-os/ssh.pem`**.
+User is **`ssh_user`** from config (`ubuntu` for Ubuntu images). Key: **`sensitive/openstack/k8s-ocp/ssh.pem`**.
 
 ```bash
-ssh -i clusters/k8s-os/ssh.pem ubuntu@$(terraform -chdir=infra/terraform/environments/openstack output -raw control_plane_public_ip)
+ssh -i sensitive/openstack/k8s-ocp/ssh.pem ubuntu@$(terraform -chdir=infra/terraform/environments/openstack output -raw control_plane_public_ip)
 ```
 
 ---
 
 ## Step 6 — Worker VMs
 
-`worker_nodes` in `config/openstack/clusters/default.yaml` (default 1). Each worker gets a port and instance on the same existing network. Names: `<cluster_name>-<worker_prefix>-1`, …
+`worker_nodes` in `clusters/openstack/k8s-ocp/config.yaml` (default 1). Each worker gets a port and instance on the same existing network. Names: `<cluster_name>-wk-1`, …
 
 ---
 
@@ -131,7 +131,7 @@ ssh -i clusters/k8s-os/ssh.pem ubuntu@$(terraform -chdir=infra/terraform/environ
 terraform -chdir=infra/terraform/environments/openstack output
 ```
 
-`./scripts/infra/openstack/up.sh` writes **`clusters/k8s-os/cluster.env`** (gitignored) for kubeadm. No Terraform in the kubeadm scripts.
+`./scripts/infra/openstack/up.sh` writes **`sensitive/openstack/k8s-ocp/cluster.env`** (gitignored) for kubeadm. No Terraform in the kubeadm scripts.
 
 ---
 
@@ -140,12 +140,12 @@ terraform -chdir=infra/terraform/environments/openstack output
 Same scripts as AWS. Point at the OpenStack inventory:
 
 ```bash
-./scripts/infra/kubeadm/up.sh default
-source scripts/lib/kubeconfig-setup.sh clusters/k8s-os/kubeconfig
+./scripts/infra/kubeadm/up.sh openstack k8s-ocp
+source scripts/lib/kubeconfig-setup.sh sensitive/openstack/k8s-ocp/kubeconfig
 kubectl get nodes -o wide
 ```
 
-Reset Kubernetes only: `./scripts/infra/kubeadm/reset.sh default`  
+Reset Kubernetes only: `./scripts/infra/kubeadm/reset.sh openstack k8s-ocp`  
 Destroy VMs: `./scripts/infra/openstack/down.sh default -y`
 
 ---

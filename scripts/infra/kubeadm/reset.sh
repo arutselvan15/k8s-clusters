@@ -1,20 +1,25 @@
 #!/usr/bin/env bash
 # Undo kubeadm on inventory hosts. Does not destroy VMs or cloud resources.
+# Same args as Day 0: ./scripts/infra/kubeadm/reset.sh aws|openstack <cluster>
 # Streams remote/reset.sh over SSH stdin (no scp).
 
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 REMOTE_DIR="${REPO_ROOT}/scripts/infra/kubeadm/remote"
-INVENTORY_FILE=""
-CLUSTER_SPEC="default"
+PLATFORM=""
+CLUSTER=""
 
 usage() {
   cat <<EOF
-Usage: ./scripts/infra/kubeadm/reset.sh [cluster] [-i inventory-file]
+Usage: ./scripts/infra/kubeadm/reset.sh <aws|openstack> <cluster>
 
-kubeadm reset on each worker, then the control plane. Removes the kubeconfig
-from inventory. VMs stay running.
+Same arguments as ./scripts/infra/up.sh / kubeadm/up.sh / down.sh.
+kubeadm reset on workers, then the control plane. Removes the kubeconfig
+listed in cluster.env. VMs stay running.
+
+  ./scripts/infra/kubeadm/reset.sh aws k8s-aws
+  ./scripts/infra/kubeadm/reset.sh openstack k8s-ocp
 EOF
 }
 
@@ -24,16 +29,21 @@ while [[ $# -gt 0 ]]; do
       usage
       exit 0
       ;;
-    -i | --inventory)
-      INVENTORY_FILE="${2:?inventory file required}"
+    -c | --cluster)
+      CLUSTER="${2:?cluster config required}"
       shift
       ;;
-    -c | --cluster)
-      CLUSTER_SPEC="${2:?cluster config required}"
-      shift
+    aws | openstack)
+      PLATFORM="$1"
       ;;
     *)
-      CLUSTER_SPEC="$1"
+      if [[ -z "${CLUSTER}" ]]; then
+        CLUSTER="$1"
+      else
+        echo "Unknown argument: $1" >&2
+        usage >&2
+        exit 1
+      fi
       ;;
   esac
   shift
@@ -43,17 +53,16 @@ done
 source "$REPO_ROOT/scripts/lib/paths.sh"
 # shellcheck source=scripts/lib/cluster-config.sh
 source "$REPO_ROOT/scripts/lib/cluster-config.sh"
-
-if [[ -z "${INVENTORY_FILE}" ]]; then
-  k8s_plat_resolve_kubeadm_inventory "${CLUSTER_SPEC}"
-  INVENTORY_FILE="${K8S_PLAT_KUBEADM_INVENTORY}"
-elif [[ "${INVENTORY_FILE}" != /* ]]; then
-  INVENTORY_FILE="${REPO_ROOT}/${INVENTORY_FILE}"
-fi
-
-"$REPO_ROOT/scripts/lib/require-tools.sh" ssh
 # shellcheck source=scripts/infra/kubeadm/lib.sh
 source "$REPO_ROOT/scripts/infra/kubeadm/lib.sh"
+
+k8s_plat_bind_kubeadm_inventory "${PLATFORM}" "${CLUSTER}" || {
+  usage >&2
+  exit 1
+}
+INVENTORY_FILE="${K8S_PLAT_CLUSTER_ENV}"
+
+"$REPO_ROOT/scripts/lib/require-tools.sh" ssh
 k8s_plat_load_inventory "${INVENTORY_FILE}"
 
 reset_node() {
@@ -77,4 +86,5 @@ if [[ -f "${KUBECONFIG_FILE}" ]]; then
   echo "Removed ${KUBECONFIG_FILE}"
 fi
 
-echo "Kubernetes removed from the nodes. Reinstall: ./scripts/infra/kubeadm/up.sh <cluster>"
+echo "Kubernetes removed from the nodes."
+echo "Reinstall: ./scripts/infra/kubeadm/up.sh ${K8S_PLAT_CLUSTER_PLATFORM} ${K8S_PLAT_CLUSTER_CONFIG_ID}"

@@ -7,14 +7,14 @@ This is one Day 0 environment. It is not a separate platform.
 Prefer the dispatcher over raw `terraform` once credentials exist:
 
 ```bash
-./scripts/infra/up.sh aws default
-./scripts/infra/kubeadm/up.sh default
-source scripts/lib/kubeconfig-setup.sh clusters/k8s-aws/kubeconfig
+./scripts/infra/up.sh aws k8s-aws
+./scripts/infra/kubeadm/up.sh aws k8s-aws
+source scripts/lib/kubeconfig-setup.sh sensitive/aws/k8s-aws/kubeconfig
 ```
 
 - Checklist (why each object exists): [infra/terraform/environments/ec2/STEPS.md](../../infra/terraform/environments/ec2/STEPS.md)
 - Root module: [environments/ec2/main.tf](../../infra/terraform/environments/ec2/main.tf)
-- Lab settings: [default.yaml.example](../../config/aws/clusters/default.yaml.example); AWS region: [cli.conf](../../config/aws/cli.conf.example); keys: `config/aws/credentials`
+- Lab settings: [config.yaml](../../clusters/aws/k8s-aws/config.yaml); keys and region: `sensitive/aws/credentials`, `sensitive/aws/cli.conf`
 
 Working directory if you run Terraform by hand:
 
@@ -40,7 +40,7 @@ infra/terraform/environments/ec2/
 | Common Day 1–2 ([bootstrap](../bootstrap/) · [gitops](../gitops/)) | ☐ |
 | [AWS-15](#lesson-aws-15) Teardown | ☐ |
 
-The current `main.tf` applies **all** of AWS-1–7 in one `./scripts/infra/up.sh aws default`. Read STEPS.md as you go so you still learn each object. Incremental `-target` is optional.
+The current `main.tf` applies **all** of AWS-1–7 in one `./scripts/infra/up.sh aws k8s-aws`. Read STEPS.md as you go so you still learn each object. Incremental `-target` is optional.
 
 ---
 
@@ -54,16 +54,16 @@ The current `main.tf` applies **all** of AWS-1–7 in one `./scripts/infra/up.sh
 2. Create an **IAM user** (or SSO) with programmatic access for labs—not root.
 3. Attach a **least-privilege policy** for this lab (e.g. `AmazonEC2FullAccess` for learning only; tighten later).
 4. Install AWS CLI v2: `brew install awscli`
-5. Copy project credentials (gitignored):
+5. Put project credentials in `sensitive/aws/` (gitignored):
 
    ```bash
-   cp config/aws/credentials.example config/aws/credentials
-   cp config/aws/cli.conf.example config/aws/cli.conf
-   cp config/aws/clusters/default.yaml.example config/aws/clusters/default.yaml
-   chmod 600 config/aws/credentials
+   mkdir -p sensitive/aws
+   # credentials: AWS CLI INI (same shape as ~/.aws/credentials)
+   # cli.conf: optional; first up.sh writes region us-east-1 if missing
+   chmod 600 sensitive/aws/credentials
    ```
 
-   Fill keys in `config/aws/credentials`. Set `admin_cidr` in `config/aws/clusters/default.yaml` to `YOUR.PUBLIC.IP/32` when you leave the wide-open lab default.
+   Fill keys in `sensitive/aws/credentials`. Set `admin_cidr` in `clusters/aws/k8s-aws/config.yaml` to `YOUR.PUBLIC.IP/32` when you leave the wide-open lab default.
 
 6. Install Terraform: `brew tap hashicorp/tap && brew install hashicorp/tap/terraform`
 
@@ -80,7 +80,7 @@ The current `main.tf` applies **all** of AWS-1–7 in one `./scripts/infra/up.sh
 **Learn:** Provider, working directory, local state. `data` = ask AWS; `resource` = create something you pay to keep.
 
 ```bash
-./scripts/infra/up.sh aws default
+./scripts/infra/up.sh aws k8s-aws
 ```
 
 Or by hand:
@@ -96,7 +96,7 @@ Read:
 - [versions.tf](../../infra/terraform/environments/ec2/versions.tf)
 - [variables.tf](../../infra/terraform/environments/ec2/variables.tf)
 
-Provider reads `k8s-platform/config/aws/` (not `~/.aws`).
+Provider reads `k8s-platform/sensitive/aws/` (not `~/.aws`).
 
 **Checkpoint:** `terraform output account_id` / `caller_arn` after the first apply.
 
@@ -106,7 +106,7 @@ Provider reads `k8s-platform/config/aws/` (not `~/.aws`).
 
 ## Lesson AWS-2 — VPC
 
-**Learn:** A **VPC** is your private network in AWS (CIDR block). Default lab CIDR is `10.0.0.0/16` (`vpc_cidr` in `config/aws/clusters/default.yaml`).
+**Learn:** A **VPC** is your private network in AWS (CIDR block). Default lab CIDR is `10.0.0.0/16` (`vpc_cidr` in `clusters/aws/k8s-aws/config.yaml`).
 
 **File:** [main.tf](../../infra/terraform/environments/ec2/main.tf) (`aws_vpc.lab`).
 
@@ -150,7 +150,7 @@ Tighten `admin_cidr` to your IP `/32` before anything other than a throwaway lab
 terraform -chdir=infra/terraform/environments/ec2 output ssh_control_plane
 ```
 
-PEM: `clusters/k8s-aws/ssh.pem` (gitignored). User: `ubuntu`.
+PEM: `sensitive/aws/k8s-aws/ssh.pem` (gitignored). User: `ubuntu`.
 
 **Cost:** ~t3.medium + disk + public IPv4 while running.
 
@@ -162,7 +162,7 @@ PEM: `clusters/k8s-aws/ssh.pem` (gitignored). User: `ubuntu`.
 
 ## Lesson AWS-6 — Worker EC2
 
-`worker_nodes` in `config/aws/clusters/default.yaml` (default 1). Extra VMs are `k8s-aws-wk-2`, … First worker stays `aws_instance.worker` so state is not replaced.
+`worker_nodes` in `clusters/aws/k8s-aws/config.yaml` (default 1). Extra VMs are `k8s-aws-wk-2`, … First worker stays `aws_instance.worker` so state is not replaced.
 
 **Checkpoint:** Both instances in the same subnet; SG `self` allows CP ↔ worker.
 
@@ -176,7 +176,7 @@ PEM: `clusters/k8s-aws/ssh.pem` (gitignored). User: `ubuntu`.
 terraform -chdir=infra/terraform/environments/ec2 output
 ```
 
-`aws/up.sh` writes `clusters/k8s-aws/cluster.env` (gitignored) for kubeadm.
+`aws/up.sh` writes `sensitive/aws/k8s-aws/cluster.env` (gitignored) for kubeadm.
 
 **Next:** [aws-kubeadm.md](./aws-kubeadm.md) — automated `./scripts/infra/kubeadm/up.sh` or manual K-1–K-4. Then [bootstrap](../bootstrap/) and [gitops](../gitops/).
 
@@ -186,12 +186,12 @@ terraform -chdir=infra/terraform/environments/ec2 output
 
 ## Lesson AWS-15 — Teardown
 
-Kubernetes only (keep VMs): `./scripts/infra/kubeadm/reset.sh default`
+Kubernetes only (keep VMs): `./scripts/infra/kubeadm/reset.sh aws k8s-aws`
 
 Then:
 
 ```bash
-./scripts/infra/down.sh aws default -y
+./scripts/infra/down.sh aws k8s-aws -y
 ```
 
 **Console:** No EC2, no VPC named `k8s-aws-*`.
@@ -202,4 +202,4 @@ Then:
 
 ## If your IP changes
 
-Update `admin_cidr` in `config/aws/clusters/default.yaml` and re-run `./scripts/infra/up.sh aws default` so SSH and `kubectl` to `:6443` work again.
+Update `admin_cidr` in `clusters/aws/k8s-aws/config.yaml` and re-run `./scripts/infra/up.sh aws k8s-aws` so SSH and `kubectl` to `:6443` work again.

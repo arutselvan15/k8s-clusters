@@ -5,7 +5,7 @@ Same on Kind, AWS, and OpenStack. Installs **Argo CD** and Git clone credentials
 Detail: [argocd.md](./argocd.md)
 
 ```bash
-source scripts/lib/kubeconfig-setup.sh clusters/<env>/kubeconfig
+source scripts/lib/kubeconfig-setup.sh sensitive/<env>/<cluster_name>/kubeconfig
 ./bootstrap/bootstrap.sh dev
 ```
 

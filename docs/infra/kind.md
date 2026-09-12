@@ -22,7 +22,7 @@ Kind runs real Kubernetes inside a container. Networking and storage differ from
 |----------|------|
 | Terraform env | [`infra/terraform/environments/kind`](../../infra/terraform/environments/kind/) |
 | Kind module | [`infra/terraform/modules/cluster-kind`](../../infra/terraform/modules/cluster-kind/) |
-| Kubeconfig output | `clusters/kind/kubeconfig` (gitignored locally) |
+| Kubeconfig output | `sensitive/kind/kubeconfig` (gitignored locally) |
 
 Dev Kind maps **host** ports to the node’s ingress ports:
 
@@ -46,7 +46,7 @@ That is why the Argo UI later is **https://argocd.dev:8443**, not `:443`.
 
 ```bash
 ./scripts/infra/up.sh kind
-source scripts/lib/kubeconfig-setup.sh clusters/kind/kubeconfig
+source scripts/lib/kubeconfig-setup.sh sensitive/kind/kubeconfig
 kubectl get nodes
 ```
 
@@ -57,7 +57,7 @@ Re-running `./scripts/infra/up.sh kind` is safe: Terraform apply refreshes the c
 Use the **common** Day 1 / Day 2 path (only the kubeconfig path changes):
 
 ```bash
-source scripts/lib/kubeconfig-setup.sh clusters/kind/kubeconfig
+source scripts/lib/kubeconfig-setup.sh sensitive/kind/kubeconfig
 ./bootstrap/bootstrap.sh dev
 ./scripts/gitops/start.sh dev
 ```
@@ -70,7 +70,7 @@ AWS and OpenStack Day 0: [aws.md](./aws.md), [openstack.md](./openstack.md). Dis
 ./scripts/infra/down.sh kind
 ```
 
-Removes the cluster and `clusters/kind/kubeconfig`.
+Removes the cluster and `sensitive/kind/kubeconfig`.
 
 ## Checklist — you understood Day 0 when you can explain
 

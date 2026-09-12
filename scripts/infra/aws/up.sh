@@ -6,7 +6,7 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 ENV_DIR="${REPO_ROOT}/infra/terraform/environments/ec2"
 AUTO_APPROVE=""
-CLUSTER_SPEC="default"
+CLUSTER_SPEC=""
 K8S_TF_VAR_ARGS=()
 
 usage() {
@@ -15,8 +15,7 @@ Usage: ./scripts/infra/aws/up.sh [cluster] [-y]
 
 Apply AWS EC2 lab (terraform environments/ec2) for exactly one cluster config.
 
-  cluster     id or path (default: default)
-              config/aws/clusters/<id>.yaml
+  cluster     id or path (required). clusters/aws/<id>/config.yaml
   -y, --yes   terraform apply -auto-approve
 
 Teardown: $(dirname "$0")/down.sh [cluster]
@@ -97,6 +96,6 @@ echo "Terraform aws applied (VMs only; Kubernetes is separate)."
 terraform output
 echo ""
 echo "Next (kubeadm):"
-echo "  ${REPO_ROOT}/scripts/infra/kubeadm/up.sh ${K8S_PLAT_CLUSTER_NAME}"
-echo "Then Day 1: source scripts/lib/kubeconfig-setup.sh clusters/${K8S_PLAT_CLUSTER_NAME}/kubeconfig"
+echo "  ${REPO_ROOT}/scripts/infra/kubeadm/up.sh ${K8S_PLAT_CLUSTER_PLATFORM} ${K8S_PLAT_CLUSTER_CONFIG_ID}"
+echo "Then Day 1: source scripts/lib/kubeconfig-setup.sh sensitive/${K8S_PLAT_CLUSTER_PLATFORM}/${K8S_PLAT_CLUSTER_NAME}/kubeconfig"
 echo "  ${REPO_ROOT}/bootstrap/bootstrap.sh dev"

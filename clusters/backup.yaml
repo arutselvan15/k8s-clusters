@@ -1,0 +1,9 @@
+# S3 backup of sensitive/ (not a secret). Bucket names are globally unique.
+# Do not put AWS keys here.
+#
+#   ./scripts/sensitive/s3.sh init
+#   ./scripts/sensitive/s3.sh push
+
+bucket: REPLACE_ME
+region: us-east-1
+prefix: k8s-platform/sensitive

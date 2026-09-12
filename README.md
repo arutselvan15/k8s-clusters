@@ -1,86 +1,16 @@
 # k8s-platform
 
-Reusable platform: **Day 0 infra** (Kind, AWS EC2, or OpenStack) · **Day 1 bootstrap** (common) · **Day 2 GitOps** (common, grows with apps).
+Day 0 cluster · Day 1 Argo CD · Day 2 apps from Git. Same bootstrap and GitOps on Kind, AWS, and OpenStack.
 
-After a cluster exists, only the kubeconfig path changes. Do not fork bootstrap or GitOps per cloud.
+| Path | Role |
+|------|------|
+| [clusters/](clusters/README.md) | Committed cluster YAML |
+| [sensitive/](sensitive/README.md) | Secrets and Terraform outputs (not git; S3) |
+| [infra/](infra/README.md) | Day 0 — Kind, AWS EC2, OpenStack |
+| [bootstrap/](bootstrap/README.md) | Day 1 — Argo CD |
+| [gitops/](gitops/README.md) | Day 2 — apps from Git |
+| [scripts/](scripts/README.md) | `up.sh` / `down.sh` / kubeadm / S3 |
 
-```text
-scripts/
-  lib/                 # kubeconfig, require-tools, cloud env
-  infra/               # Day 0 — kind | aws | openstack + kubeadm
-  bootstrap/up.sh      # Kind convenience: Day 0 + Day 1
-  gitops/              # Day 2 — start.sh, chainsaw.sh
-```
+Kind (Day 0 + Day 1): `./scripts/bootstrap/up.sh`
 
-Details: [scripts/README.md](scripts/README.md) · Model: [docs/platform-lifecycle.md](docs/platform-lifecycle.md)
-
----
-
-## Quick start (Kind)
-
-```bash
-chmod +x scripts/infra/*.sh scripts/infra/*/*.sh scripts/infra/kubeadm/remote/*.sh \
-  scripts/bootstrap/*.sh scripts/gitops/*.sh scripts/lib/*.sh \
-  bootstrap/bootstrap.sh bootstrap/argocd/install.sh
-```
-
-Optional: copy [`bootstrap/env/bootstrap.env.example`](bootstrap/env/bootstrap.env.example) → `bootstrap.env`.
-
-```bash
-./scripts/bootstrap/up.sh
-
-git push origin main
-
-source scripts/lib/kubeconfig-setup.sh clusters/kind/kubeconfig
-./scripts/gitops/start.sh dev
-```
-
-When **`argocd-server-tls`** is Ready, run **`./bootstrap/bootstrap.sh dev`** again → **https://argocd.dev:8443** (`127.0.0.1 argocd.dev` in `/etc/hosts`).
-
-Day 0 only: `./scripts/infra/up.sh kind`
-
----
-
-## Day 0 — AWS or OpenStack (VMs, then kubeadm)
-
-```bash
-cp config/aws/credentials.example config/aws/credentials && chmod 600 config/aws/credentials
-cp config/aws/cli.conf.example config/aws/cli.conf
-cp config/aws/clusters/default.yaml.example config/aws/clusters/default.yaml
-./scripts/infra/up.sh aws default
-./scripts/infra/kubeadm/up.sh default
-source scripts/lib/kubeconfig-setup.sh clusters/k8s-aws/kubeconfig
-
-cp config/openstack/clouds.yaml.example config/openstack/clouds.yaml && chmod 600 config/openstack/clouds.yaml
-cp config/openstack/clusters/default.yaml.example config/openstack/clusters/default.yaml
-./scripts/infra/up.sh openstack default
-./scripts/infra/kubeadm/up.sh default
-source scripts/lib/kubeconfig-setup.sh clusters/k8s-os/kubeconfig
-```
-
-Checklists: [ec2/STEPS.md](infra/terraform/environments/ec2/STEPS.md), [openstack/STEPS.md](infra/terraform/environments/openstack/STEPS.md).
-
----
-
-## Teardown
-
-```bash
-./scripts/infra/down.sh kind
-./scripts/infra/down.sh aws default -y
-./scripts/infra/down.sh openstack default -y   # does not delete the existing tenant network
-```
-
----
-
-## Documentation
-
-Start at **[docs/README.md](./docs/README.md)**. Resume with [docs/continue.md](./docs/continue.md).
-
-| Topic | Doc |
-|--------|-----|
-| Reusable model | [docs/platform-lifecycle.md](./docs/platform-lifecycle.md) |
-| Day 0 — Kind / AWS / OpenStack | [docs/infra/](./docs/infra/) |
-| Day 1 — bootstrap (common) | [docs/bootstrap/](./docs/bootstrap/) |
-| Day 2 — GitOps apps (common) | [docs/gitops/](./docs/gitops/) |
-| Scripts | [scripts/README.md](./scripts/README.md) |
-| Code runbooks | [infra/README.md](./infra/README.md) · [bootstrap/README.md](./bootstrap/README.md) · [gitops/README.md](./gitops/README.md) |
+Guides: [docs/README.md](docs/README.md)

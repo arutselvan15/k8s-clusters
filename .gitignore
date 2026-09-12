@@ -2,33 +2,9 @@
 bootstrap/env/bootstrap.env
 .idea
 
-# Terraform runtime (keep *.tf and STEPS.md tracked)
+# Provider cache next to the .tf files (not in sensitive/)
 **/.terraform/
-*.tfstate
-*.tfstate.*
-.terraform.tfstate.lock.info
-crash.log
-*.tfplan
-terraform.tfvars
 
-# Lab inputs (copy from *.example; never commit secrets)
-config/aws/credentials
-config/aws/cli.conf
-config/aws/clusters/*.yaml
-!config/aws/clusters/*.yaml.example
-config/openstack/clouds.yaml
-config/openstack/clusters/*.yaml
-!config/openstack/clusters/*.yaml.example
-
-# Lab outputs (kubeconfig, SSH keys, inventory)
-clusters/**
-!clusters/README.md
-
-# Leftover files under these dirs must never be committed
-.aws/credentials
-.aws/config
-.aws/*.pem
-.aws/known_hosts
-.openstack/clouds.yaml
-.openstack/config
-.openstack/*.pem
+# sensitive/ — secrets + outputs (S3). clusters/ is committed.
+sensitive/**
+!sensitive/README.md

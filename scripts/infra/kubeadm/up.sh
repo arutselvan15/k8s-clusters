@@ -1,26 +1,28 @@
 #!/usr/bin/env bash
 # Install Kubernetes with kubeadm on already-running nodes.
-# Reads an inventory file (no Terraform, no cloud API). Streams remote/*.sh over SSH stdin.
+# Same args as Day 0: ./scripts/infra/kubeadm/up.sh aws|openstack <cluster>
+# Reads sensitive/<env>/<cluster_name>/cluster.env (no Terraform, no cloud API).
 
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 REMOTE_DIR="${REPO_ROOT}/scripts/infra/kubeadm/remote"
-INVENTORY_FILE=""
-CLUSTER_SPEC="default"
+PLATFORM=""
+CLUSTER=""
 
 usage() {
   cat <<EOF
-Usage: ./scripts/infra/kubeadm/up.sh [cluster] [-i inventory-file]
+Usage: ./scripts/infra/kubeadm/up.sh <aws|openstack> <cluster>
 
-Reads SSH hosts and kubeadm settings from one cluster inventory (KEY=VAL).
-Does not call Terraform.
+Same arguments as ./scripts/infra/up.sh. Loads cluster.env under
+sensitive/<env>/<cluster_name>/ written by Day 0.
 
-  cluster                config id, cluster_name, or yaml path (default: default)
-  -i, --inventory FILE   skip config lookup; use this cluster.env
-  -h, --help
+  ./scripts/infra/up.sh aws k8s-aws
+  ./scripts/infra/kubeadm/up.sh aws k8s-aws
+  ./scripts/infra/down.sh aws k8s-aws
 
-Reset:   ./scripts/infra/kubeadm/reset.sh [cluster]
+  ./scripts/infra/kubeadm/up.sh openstack k8s-ocp
+  ./scripts/infra/kubeadm/reset.sh aws k8s-aws
 EOF
 }
 
@@ -30,16 +32,21 @@ while [[ $# -gt 0 ]]; do
       usage
       exit 0
       ;;
-    -i | --inventory)
-      INVENTORY_FILE="${2:?inventory file required}"
+    -c | --cluster)
+      CLUSTER="${2:?cluster config required}"
       shift
       ;;
-    -c | --cluster)
-      CLUSTER_SPEC="${2:?cluster config required}"
-      shift
+    aws | openstack)
+      PLATFORM="$1"
       ;;
     *)
-      CLUSTER_SPEC="$1"
+      if [[ -z "${CLUSTER}" ]]; then
+        CLUSTER="$1"
+      else
+        echo "Unknown argument: $1" >&2
+        usage >&2
+        exit 1
+      fi
       ;;
   esac
   shift
@@ -49,21 +56,20 @@ done
 source "$REPO_ROOT/scripts/lib/paths.sh"
 # shellcheck source=scripts/lib/cluster-config.sh
 source "$REPO_ROOT/scripts/lib/cluster-config.sh"
-
-if [[ -z "${INVENTORY_FILE}" ]]; then
-  k8s_plat_resolve_kubeadm_inventory "${CLUSTER_SPEC}"
-  INVENTORY_FILE="${K8S_PLAT_KUBEADM_INVENTORY}"
-elif [[ "${INVENTORY_FILE}" != /* ]]; then
-  INVENTORY_FILE="${REPO_ROOT}/${INVENTORY_FILE}"
-fi
-
-"$REPO_ROOT/scripts/lib/require-tools.sh" ssh kubectl
 # shellcheck source=scripts/infra/kubeadm/lib.sh
 source "$REPO_ROOT/scripts/infra/kubeadm/lib.sh"
+
+k8s_plat_bind_kubeadm_inventory "${PLATFORM}" "${CLUSTER}" || {
+  usage >&2
+  exit 1
+}
+INVENTORY_FILE="${K8S_PLAT_CLUSTER_ENV}"
+
+"$REPO_ROOT/scripts/lib/require-tools.sh" ssh kubectl
 k8s_plat_load_inventory "${INVENTORY_FILE}"
 
 echo "==> kubeadm (Kubernetes v${K8S_VERSION})"
-echo "    inventory     ${INVENTORY_FILE}"
+echo "    ${K8S_PLAT_CLUSTER_PLATFORM} ${K8S_PLAT_CLUSTER_CONFIG_ID} → ${INVENTORY_FILE}"
 echo "    control-plane ${CONTROL_PLANE_HOST} (API ${CONTROL_PLANE_ENDPOINT}:6443)"
 echo "    workers       ${#WORKER_HOST_LIST[@]} (${WORKER_HOSTS:-none})"
 echo "    pod CIDR      ${POD_CIDR}"
@@ -96,7 +102,6 @@ if [[ ${#WORKER_HOST_LIST[@]} -gt 0 ]]; then
   fi
   for host in "${WORKER_HOST_LIST[@]}"; do
     echo "    join ${host}"
-    # Do not print JOIN_CMD (bootstrap token).
     k8s_plat_ssh_script "${host}" "${REMOTE_DIR}/join.sh" JOIN_CMD="${JOIN_CMD}"
   done
 else

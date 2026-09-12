@@ -8,19 +8,63 @@ k8s_plat_cluster_token_ok() {
   [[ "$1" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]
 }
 
-# Usage: k8s_plat_resolve_cluster_config <aws|openstack> [id|path] [create]
-# create=1 (default) copies default.yaml.example when spec is default and missing.
-# Sets K8S_PLAT_CLUSTER_CONFIG and K8S_PLAT_CLUSTER_CONFIG_ID.
+# Usage: k8s_plat_resolve_cluster_config <aws|openstack> [id|path]
+# Sets K8S_PLAT_CLUSTER_CONFIG from clusters/<platform>/<id>/config.yaml
+k8s_plat_cluster_yaml_in_dir() {
+  local d="$1"
+  local n
+  n="$(basename "${d}")"
+  local f
+  for f in config.yaml cluster.yaml "${n}.yaml"; do
+    if [[ -f "${d}/${f}" ]]; then
+      echo "${d}/${f}"
+      return 0
+    fi
+  done
+  return 1
+}
+
+k8s_plat_list_cluster_ids() {
+  local platform="$1"
+  local dir="${K8S_PLAT_CLUSTER_INPUT_DIR}/${platform}"
+  local d yaml
+  [[ -d "${dir}" ]] || return 0
+  while IFS= read -r d; do
+    [[ -d "${d}" ]] || continue
+    yaml="$(k8s_plat_cluster_yaml_in_dir "${d}" 2>/dev/null || true)"
+    if [[ -n "${yaml}" ]]; then
+      basename "${d}"
+    fi
+  done < <(find "${dir}" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort)
+}
+
+k8s_plat_require_cluster_spec() {
+  local platform="$1"
+  local spec="$2"
+  local ids
+  if [[ -n "${spec}" ]]; then
+    return 0
+  fi
+  echo "Pass a cluster id: ./scripts/infra/up.sh ${platform} <id>" >&2
+  ids="$(k8s_plat_list_cluster_ids "${platform}")"
+  if [[ -n "${ids}" ]]; then
+    echo "Available under clusters/${platform}/:" >&2
+    echo "${ids}" | sed 's/^/  /' >&2
+  else
+    echo "  Add clusters/${platform}/<id>/config.yaml" >&2
+  fi
+  return 1
+}
+
 k8s_plat_resolve_cluster_config() {
   local platform="$1"
-  local spec="${2:-default}"
-  local create="${3:-1}"
-  local dir="${K8S_PLAT_CONFIG_DIR}/${platform}/clusters"
-  local example="${dir}/default.yaml.example"
+  local spec="${2:-}"
+  local dir="${K8S_PLAT_CLUSTER_INPUT_DIR}/${platform}"
   local resolved=""
-  local dest=""
+  local yaml=""
 
-  mkdir -p "${dir}"
+  k8s_plat_migrate_to_sensitive
+  k8s_plat_require_cluster_spec "${platform}" "${spec}" || return 1
 
   if [[ "${spec}" == /* && -f "${spec}" ]]; then
     resolved="${spec}"
@@ -28,33 +72,49 @@ k8s_plat_resolve_cluster_config() {
     resolved="${REPO_ROOT}/${spec}"
   elif [[ -f "${spec}" ]]; then
     resolved="$(cd "$(dirname "${spec}")" && pwd)/$(basename "${spec}")"
+  elif yaml="$(k8s_plat_cluster_yaml_in_dir "${dir}/${spec}")"; then
+    resolved="${yaml}"
   elif [[ -f "${dir}/${spec}" ]]; then
     resolved="${dir}/${spec}"
   elif [[ -f "${dir}/${spec}.yaml" ]]; then
     resolved="${dir}/${spec}.yaml"
-  elif [[ "${spec}" == "default" && "${create}" == "1" && -f "${example}" ]]; then
-    dest="${dir}/default.yaml"
-    cp "${example}" "${dest}"
-    echo "==> Wrote ${dest} from default.yaml.example"
-    resolved="${dest}"
   else
     echo "No cluster config for ${platform}: ${spec}" >&2
-    echo "  cp ${example} ${dir}/${spec%.yaml}.yaml" >&2
-    echo "  ./scripts/infra/up.sh ${platform} ${spec%.yaml}" >&2
+    echo "  Add ${dir}/${spec}/config.yaml" >&2
+    echo "  ./scripts/infra/up.sh ${platform} ${spec}" >&2
     return 1
   fi
 
   K8S_PLAT_CLUSTER_CONFIG="${resolved}"
-  K8S_PLAT_CLUSTER_CONFIG_ID="$(basename "${resolved}")"
-  K8S_PLAT_CLUSTER_CONFIG_ID="${K8S_PLAT_CLUSTER_CONFIG_ID%.yaml}"
+  K8S_PLAT_CLUSTER_PLATFORM="${platform}"
+  if [[ "$(basename "${resolved}")" == "cluster.yaml" || "$(basename "${resolved}")" == "config.yaml" ]]; then
+    K8S_PLAT_CLUSTER_CONFIG_ID="$(basename "$(dirname "${resolved}")")"
+  else
+    K8S_PLAT_CLUSTER_CONFIG_ID="$(basename "${resolved}")"
+    K8S_PLAT_CLUSTER_CONFIG_ID="${K8S_PLAT_CLUSTER_CONFIG_ID%.yaml}"
+  fi
 }
 
-# Read identity from K8S_PLAT_CLUSTER_CONFIG and set clusters/<cluster_name>/ paths.
+# Read identity from K8S_PLAT_CLUSTER_CONFIG and set sensitive/<env>/<cluster_name>/ paths.
 k8s_plat_apply_cluster_outputs() {
-  local name cp_prefix wk_prefix
+  local name platform
   local yaml="${K8S_PLAT_CLUSTER_CONFIG:?cluster config not resolved}"
 
+  case "${yaml}" in
+    */clusters/aws/*) platform="aws" ;;
+    */clusters/openstack/*) platform="openstack" ;;
+    *) platform="${K8S_PLAT_CLUSTER_PLATFORM:-}" ;;
+  esac
+  if [[ -z "${platform}" ]]; then
+    echo "Cannot tell aws vs openstack for ${yaml}" >&2
+    return 1
+  fi
+  K8S_PLAT_CLUSTER_PLATFORM="${platform}"
+
   name="$(k8s_plat_yaml_get "${yaml}" cluster_name 2>/dev/null || true)"
+  if [[ -z "${name}" ]]; then
+    name="${K8S_PLAT_CLUSTER_CONFIG_ID:-}"
+  fi
   if [[ -z "${name}" ]]; then
     echo "Set cluster_name in ${yaml}" >&2
     return 1
@@ -64,21 +124,8 @@ k8s_plat_apply_cluster_outputs() {
     return 1
   fi
 
-  cp_prefix="$(k8s_plat_yaml_get "${yaml}" control_plane_prefix 2>/dev/null || echo "cp")"
-  wk_prefix="$(k8s_plat_yaml_get "${yaml}" worker_prefix 2>/dev/null || echo "wk")"
-  if ! k8s_plat_cluster_token_ok "${cp_prefix}"; then
-    echo "control_plane_prefix must be a simple name: ${cp_prefix}" >&2
-    return 1
-  fi
-  if ! k8s_plat_cluster_token_ok "${wk_prefix}"; then
-    echo "worker_prefix must be a simple name: ${wk_prefix}" >&2
-    return 1
-  fi
-
   K8S_PLAT_CLUSTER_NAME="${name}"
-  K8S_PLAT_CONTROL_PLANE_PREFIX="${cp_prefix}"
-  K8S_PLAT_WORKER_PREFIX="${wk_prefix}"
-  K8S_PLAT_CLUSTER_DIR="${K8S_PLAT_CLUSTERS_DIR}/${name}"
+  K8S_PLAT_CLUSTER_DIR="${K8S_PLAT_SENSITIVE_DIR}/${platform}/${name}"
   K8S_PLAT_CLUSTER_KUBECONFIG="${K8S_PLAT_CLUSTER_DIR}/kubeconfig"
   K8S_PLAT_CLUSTER_SSH_KEY="${K8S_PLAT_CLUSTER_DIR}/ssh.pem"
   K8S_PLAT_CLUSTER_ENV="${K8S_PLAT_CLUSTER_DIR}/cluster.env"
@@ -104,7 +151,7 @@ k8s_plat_apply_cluster_outputs() {
 
   mkdir -p "${K8S_PLAT_CLUSTER_DIR}"
   echo "==> Cluster ${K8S_PLAT_CLUSTER_NAME} (config ${yaml})"
-  echo "    nodes ${K8S_PLAT_CLUSTER_NAME}-${K8S_PLAT_CONTROL_PLANE_PREFIX} / ${K8S_PLAT_CLUSTER_NAME}-${K8S_PLAT_WORKER_PREFIX}-N"
+  echo "    nodes ${K8S_PLAT_CLUSTER_NAME}-cp / ${K8S_PLAT_CLUSTER_NAME}-wk-N"
   echo "    outputs ${K8S_PLAT_CLUSTER_DIR}"
 }
 
@@ -122,57 +169,23 @@ k8s_plat_terraform_init() {
   terraform init -input=false -reconfigure -backend-config="path=${K8S_PLAT_TFSTATE}"
 }
 
-# kubeadm: cluster id, yaml path, or clusters/<name>/cluster.env
-k8s_plat_resolve_kubeadm_inventory() {
-  local spec="${1:-}"
-  local env=""
-  local platform=""
+# Same args as infra/up.sh and infra/down.sh: <aws|openstack> <cluster-id>
+k8s_plat_bind_kubeadm_inventory() {
+  local platform="$1"
+  local spec="$2"
 
-  if [[ -z "${spec}" ]]; then
-    echo "Pass a cluster config (example: default) or -i clusters/<name>/cluster.env" >&2
+  case "${platform}" in
+    aws | openstack) ;;
+    *)
+      echo "Pass aws or openstack (same as ./scripts/infra/up.sh)." >&2
+      return 1
+      ;;
+  esac
+  k8s_plat_resolve_cluster_config "${platform}" "${spec}" || return 1
+  k8s_plat_apply_cluster_outputs
+  if [[ ! -f "${K8S_PLAT_CLUSTER_ENV}" ]]; then
+    echo "Inventory not found: ${K8S_PLAT_CLUSTER_ENV}" >&2
+    echo "Run ./scripts/infra/up.sh ${platform} ${spec} first." >&2
     return 1
   fi
-
-  if [[ "${spec}" == /* && -f "${spec}" ]]; then
-    if [[ "${spec}" == *.env ]]; then
-      K8S_PLAT_KUBEADM_INVENTORY="${spec}"
-      return 0
-    fi
-    if [[ "${spec}" == *.yaml ]]; then
-      K8S_PLAT_CLUSTER_CONFIG="${spec}"
-      k8s_plat_apply_cluster_outputs
-      if [[ -f "${K8S_PLAT_CLUSTER_ENV}" ]]; then
-        K8S_PLAT_KUBEADM_INVENTORY="${K8S_PLAT_CLUSTER_ENV}"
-        return 0
-      fi
-    fi
-  elif [[ -f "${REPO_ROOT}/${spec}" && "${spec}" == *.env ]]; then
-    K8S_PLAT_KUBEADM_INVENTORY="${REPO_ROOT}/${spec}"
-    return 0
-  elif [[ -f "${REPO_ROOT}/${spec}" && "${spec}" == *.yaml ]]; then
-    K8S_PLAT_CLUSTER_CONFIG="${REPO_ROOT}/${spec}"
-    k8s_plat_apply_cluster_outputs
-    if [[ -f "${K8S_PLAT_CLUSTER_ENV}" ]]; then
-      K8S_PLAT_KUBEADM_INVENTORY="${K8S_PLAT_CLUSTER_ENV}"
-      return 0
-    fi
-  elif [[ -f "${K8S_PLAT_CLUSTERS_DIR}/${spec}/cluster.env" ]]; then
-    K8S_PLAT_KUBEADM_INVENTORY="${K8S_PLAT_CLUSTERS_DIR}/${spec}/cluster.env"
-    return 0
-  fi
-
-  for platform in aws openstack; do
-    if k8s_plat_resolve_cluster_config "${platform}" "${spec}" 0 2>/dev/null; then
-      k8s_plat_apply_cluster_outputs
-      env="${K8S_PLAT_CLUSTER_ENV}"
-      if [[ -f "${env}" ]]; then
-        K8S_PLAT_KUBEADM_INVENTORY="${env}"
-        return 0
-      fi
-    fi
-  done
-
-  echo "No kubeadm inventory for ${spec}." >&2
-  echo "Run Day 0 first: ./scripts/infra/up.sh aws|openstack ${spec}" >&2
-  return 1
 }

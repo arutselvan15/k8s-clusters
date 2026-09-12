@@ -16,7 +16,7 @@ infra/terraform/
 
 ```bash
 ./scripts/infra/up.sh kind
-source scripts/lib/kubeconfig-setup.sh clusters/kind/kubeconfig
+source scripts/lib/kubeconfig-setup.sh sensitive/kind/kubeconfig
 ```
 
 Host ports **8080 → 80** and **8443 → 443** on the control-plane node (Argo UI later: https://argocd.dev:8443). Teardown: `./scripts/infra/down.sh kind`
@@ -26,12 +26,11 @@ Host ports **8080 → 80** and **8443 → 443** on the control-plane node (Argo 
 Checklist: **[environments/ec2/STEPS.md](environments/ec2/STEPS.md)**
 
 ```bash
-cp config/aws/credentials.example config/aws/credentials && chmod 600 config/aws/credentials
-cp config/aws/cli.conf.example config/aws/cli.conf
-cp config/aws/clusters/default.yaml.example config/aws/clusters/default.yaml
-./scripts/infra/up.sh aws default
-./scripts/infra/kubeadm/up.sh default
-source scripts/lib/kubeconfig-setup.sh clusters/k8s-aws/kubeconfig
+mkdir -p sensitive/aws
+# credentials + cli.conf live in sensitive/aws/
+./scripts/infra/up.sh aws k8s-aws
+./scripts/infra/kubeadm/up.sh aws k8s-aws
+source scripts/lib/kubeconfig-setup.sh sensitive/aws/k8s-aws/kubeconfig
 ```
 
 ## openstack
@@ -39,11 +38,11 @@ source scripts/lib/kubeconfig-setup.sh clusters/k8s-aws/kubeconfig
 Checklist: **[environments/openstack/STEPS.md](environments/openstack/STEPS.md)**
 
 ```bash
-cp config/openstack/clouds.yaml.example config/openstack/clouds.yaml && chmod 600 config/openstack/clouds.yaml
-cp config/openstack/clusters/default.yaml.example config/openstack/clusters/default.yaml
-./scripts/infra/up.sh openstack default
-./scripts/infra/kubeadm/up.sh default
-source scripts/lib/kubeconfig-setup.sh clusters/k8s-os/kubeconfig
+mkdir -p sensitive/openstack
+cp clusters/openstack/clouds.yaml.example sensitive/openstack/clouds.yaml && chmod 600 sensitive/openstack/clouds.yaml
+./scripts/infra/up.sh openstack k8s-ocp
+./scripts/infra/kubeadm/up.sh openstack k8s-ocp
+source scripts/lib/kubeconfig-setup.sh sensitive/openstack/k8s-ocp/kubeconfig
 ```
 
 Terraform does **not** create or destroy the existing Neutron network.
@@ -59,7 +58,7 @@ terraform version   # >= 1.5
 ## Day 1
 
 ```bash
-source scripts/lib/kubeconfig-setup.sh clusters/kind/kubeconfig   # or aws-dev / os-dev
+source scripts/lib/kubeconfig-setup.sh sensitive/kind/kubeconfig   # or sensitive/<env>/<cluster_name>/kubeconfig
 ./bootstrap/bootstrap.sh dev
 ```
 

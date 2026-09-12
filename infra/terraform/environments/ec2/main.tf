@@ -149,7 +149,7 @@ resource "aws_instance" "control_plane" {
   }
 
   tags = {
-    Name = "${var.cluster_name}-${var.control_plane_prefix}"
+    Name = "${var.cluster_name}-cp"
     Role = "control-plane"
   }
 }
@@ -169,7 +169,7 @@ resource "aws_instance" "worker" {
   }
 
   tags = {
-    Name = "${var.cluster_name}-${var.worker_prefix}-1"
+    Name = "${var.cluster_name}-wk-1"
     Role = "worker"
   }
 }
@@ -192,7 +192,7 @@ resource "aws_instance" "extra_workers" {
   }
 
   tags = {
-    Name = "${var.cluster_name}-${var.worker_prefix}-${count.index + 2}"
+    Name = "${var.cluster_name}-wk-${count.index + 2}"
     Role = "worker"
   }
 }

@@ -20,9 +20,8 @@ Usage: $(basename "$0") [kind|aws|openstack] [cluster] [-y]
   aws          ./scripts/infra/aws/up.sh [cluster]
   openstack    ./scripts/infra/openstack/up.sh [cluster]
 
-  cluster     config id or path (aws/openstack). Default: default
-              Copies config/<platform>/clusters/default.yaml.example on first run.
-              Example: default | lab | config/aws/clusters/lab.yaml
+  cluster     config id or path (required for aws/openstack)
+              Directory under clusters/<platform>/, e.g. k8s-aws
 
   -y, --yes   pass through to the platform script
   -h, --help
@@ -67,7 +66,9 @@ if [[ "${PLATFORM}" == "kind" ]]; then
   exec "${REPO_ROOT}/scripts/infra/kind/up.sh" ${YES}
 fi
 
-if [[ -n "${CLUSTER}" ]]; then
-  exec "${REPO_ROOT}/scripts/infra/${PLATFORM}/up.sh" ${YES} --cluster "${CLUSTER}"
-fi
-exec "${REPO_ROOT}/scripts/infra/${PLATFORM}/up.sh" ${YES}
+# shellcheck source=scripts/lib/paths.sh
+source "${REPO_ROOT}/scripts/lib/paths.sh"
+# shellcheck source=scripts/lib/cluster-config.sh
+source "${REPO_ROOT}/scripts/lib/cluster-config.sh"
+k8s_plat_require_cluster_spec "${PLATFORM}" "${CLUSTER}" || exit 1
+exec "${REPO_ROOT}/scripts/infra/${PLATFORM}/up.sh" ${YES} --cluster "${CLUSTER}"

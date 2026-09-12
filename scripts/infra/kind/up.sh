@@ -14,7 +14,7 @@ usage() {
 Usage: ./scripts/infra/kind/up.sh [-y]
 
 Create the local Kind cluster (terraform environments/kind).
-Writes kubeconfig to clusters/kind/kubeconfig.
+Writes kubeconfig to sensitive/kind/kubeconfig.
 
 -y is accepted for consistency; Kind apply is auto-approved.
 
@@ -48,10 +48,11 @@ fi
 
 echo "==> Kind: ${ENV_DIR}"
 "$REPO_ROOT/scripts/lib/require-tools.sh" terraform kubectl kind
+k8s_plat_migrate_to_sensitive
 k8s_plat_prepare_kind_runtime
 
 cd "$ENV_DIR"
-terraform init -input=false
+k8s_plat_kind_terraform_init
 # shellcheck disable=SC2086
 terraform apply -input=false $AUTO_APPROVE
 

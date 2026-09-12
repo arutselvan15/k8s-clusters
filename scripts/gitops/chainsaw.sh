@@ -13,7 +13,7 @@ Run Kyverno Chainsaw e2e tests under gitops/chainsaw/ against the current cluste
 Requires: chainsaw on PATH, KUBECONFIG set (see scripts/lib/kubeconfig-setup.sh).
 
 Example:
-  source scripts/lib/kubeconfig-setup.sh clusters/kind/kubeconfig
+  source scripts/lib/kubeconfig-setup.sh sensitive/kind/kubeconfig
   $(basename "$0")
 EOF
 }

@@ -9,6 +9,7 @@ scripts/
 │   ├── up.sh / down.sh  # kind | aws | openstack
 │   ├── kind/ aws/ openstack/
 │   └── kubeadm/         # Kubernetes on VMs (not Terraform)
+├── sensitive/s3.sh      # backup sensitive/ to S3 (independent)
 ├── bootstrap/           # Day 1 one-shot (Kind + Argo CD)
 │   └── up.sh
 └── gitops/              # Day 2
@@ -19,18 +20,18 @@ scripts/
 ```bash
 ./scripts/infra/up.sh kind
 ./scripts/bootstrap/up.sh
-source scripts/lib/kubeconfig-setup.sh clusters/kind/kubeconfig
+source scripts/lib/kubeconfig-setup.sh sensitive/kind/kubeconfig
 ./scripts/gitops/start.sh dev
 
-./scripts/infra/up.sh aws default
-./scripts/infra/kubeadm/up.sh default
+./scripts/infra/up.sh aws k8s-aws
+./scripts/infra/kubeadm/up.sh aws k8s-aws
 
 ./scripts/infra/down.sh kind
-./scripts/infra/down.sh aws default -y
+./scripts/infra/down.sh aws k8s-aws -y
 ```
 
 Day 1 on **any** cluster: `./bootstrap/bootstrap.sh dev` (repo `bootstrap/`, not this folder).
 
 `scripts/bootstrap/up.sh` is Kind-only convenience (Day 0 Kind + Day 1).
 
-Docs: [docs/README.md](../docs/README.md) · Inputs: [config/README.md](../config/README.md) · Outputs: [clusters/README.md](../clusters/README.md)
+Docs: [docs/README.md](../docs/README.md) · Inputs: [clusters/README.md](../clusters/README.md) · Secrets: [sensitive/README.md](../sensitive/README.md)

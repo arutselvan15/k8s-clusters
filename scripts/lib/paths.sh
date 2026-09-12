@@ -1,37 +1,102 @@
 #!/usr/bin/env bash
-# Repo-relative input (config/) and output (clusters/) paths.
-# Source after REPO_ROOT is set.
+# Cluster YAML: clusters/<platform>/<id>/config.yaml (committed).
+# Secrets + Terraform outputs: sensitive/ (gitignored, S3).
 
 : "${REPO_ROOT:?REPO_ROOT must be set before sourcing paths.sh}"
 
-K8S_PLAT_CONFIG_DIR="${REPO_ROOT}/config"
-K8S_PLAT_CLUSTERS_DIR="${REPO_ROOT}/clusters"
+K8S_PLAT_CLUSTER_INPUT_DIR="${REPO_ROOT}/clusters"
+K8S_PLAT_EXAMPLES_DIR="${REPO_ROOT}/clusters"
+K8S_PLAT_SENSITIVE_DIR="${REPO_ROOT}/sensitive"
+K8S_PLAT_CONFIG_DIR="${K8S_PLAT_SENSITIVE_DIR}"
+K8S_PLAT_CLUSTERS_DIR="${K8S_PLAT_SENSITIVE_DIR}"
+K8S_PLAT_BACKUP_YAML="${K8S_PLAT_CLUSTER_INPUT_DIR}/backup.yaml"
 
-# --- AWS inputs (auth is shared; cluster knobs are config/aws/clusters/*.yaml) ---
+# --- AWS / OpenStack secrets (not cluster-specific) ---
 K8S_PLAT_AWS_CREDENTIALS="${K8S_PLAT_CONFIG_DIR}/aws/credentials"
 K8S_PLAT_AWS_CLI_CONF="${K8S_PLAT_CONFIG_DIR}/aws/cli.conf"
-K8S_PLAT_AWS_INFRA_YAML="${K8S_PLAT_CONFIG_DIR}/aws/clusters/default.yaml"
-
-# --- OpenStack inputs ---
 K8S_PLAT_OS_CLOUDS="${K8S_PLAT_CONFIG_DIR}/openstack/clouds.yaml"
-K8S_PLAT_OS_INFRA_YAML="${K8S_PLAT_CONFIG_DIR}/openstack/clusters/default.yaml"
 
-# Cluster output paths are bound after k8s_plat_apply_cluster_outputs
-# (clusters/<cluster_name>/). Placeholders until a config is selected:
-K8S_PLAT_AWS_CLUSTER_DIR="${K8S_PLAT_CLUSTERS_DIR}/aws"
-K8S_PLAT_AWS_KUBECONFIG="${K8S_PLAT_AWS_CLUSTER_DIR}/kubeconfig"
-K8S_PLAT_AWS_SSH_KEY="${K8S_PLAT_AWS_CLUSTER_DIR}/ssh.pem"
-K8S_PLAT_AWS_CLUSTER_ENV="${K8S_PLAT_AWS_CLUSTER_DIR}/cluster.env"
-K8S_PLAT_AWS_KNOWN_HOSTS="${K8S_PLAT_AWS_CLUSTER_DIR}/known_hosts"
-K8S_PLAT_OS_CLUSTER_DIR="${K8S_PLAT_CLUSTERS_DIR}/openstack"
-K8S_PLAT_OS_KUBECONFIG="${K8S_PLAT_OS_CLUSTER_DIR}/kubeconfig"
-K8S_PLAT_OS_SSH_KEY="${K8S_PLAT_OS_CLUSTER_DIR}/ssh.pem"
-K8S_PLAT_OS_CLUSTER_ENV="${K8S_PLAT_OS_CLUSTER_DIR}/cluster.env"
-K8S_PLAT_OS_KNOWN_HOSTS="${K8S_PLAT_OS_CLUSTER_DIR}/known_hosts"
+# Bound after k8s_plat_apply_cluster_outputs from the cluster id passed to the script.
+K8S_PLAT_AWS_INFRA_YAML=""
+K8S_PLAT_OS_INFRA_YAML=""
+K8S_PLAT_AWS_CLUSTER_DIR=""
+K8S_PLAT_AWS_KUBECONFIG=""
+K8S_PLAT_AWS_SSH_KEY=""
+K8S_PLAT_AWS_CLUSTER_ENV=""
+K8S_PLAT_AWS_KNOWN_HOSTS=""
+K8S_PLAT_OS_CLUSTER_DIR=""
+K8S_PLAT_OS_KUBECONFIG=""
+K8S_PLAT_OS_SSH_KEY=""
+K8S_PLAT_OS_CLUSTER_ENV=""
+K8S_PLAT_OS_KNOWN_HOSTS=""
 
 # --- Kind outputs ---
 K8S_PLAT_KIND_CLUSTER_DIR="${K8S_PLAT_CLUSTERS_DIR}/kind"
 K8S_PLAT_KIND_KUBECONFIG="${K8S_PLAT_KIND_CLUSTER_DIR}/kubeconfig"
+K8S_PLAT_KIND_TFSTATE="${K8S_PLAT_KIND_CLUSTER_DIR}/terraform.tfstate"
+
+# Move leftover secrets/outputs into sensitive/. Does not move committed cluster YAML.
+k8s_plat_migrate_to_sensitive() {
+  local src dest name parent
+  mkdir -p \
+    "${K8S_PLAT_SENSITIVE_DIR}/aws" \
+    "${K8S_PLAT_SENSITIVE_DIR}/openstack"
+
+  for src in \
+    "${REPO_ROOT}/config/aws/credentials:${K8S_PLAT_AWS_CREDENTIALS}" \
+    "${REPO_ROOT}/config/aws/cli.conf:${K8S_PLAT_AWS_CLI_CONF}" \
+    "${REPO_ROOT}/config/openstack/clouds.yaml:${K8S_PLAT_OS_CLOUDS}"; do
+    dest="${src#*:}"
+    src="${src%%:*}"
+    if [[ -f "${src}" && ! -f "${dest}" ]]; then
+      mkdir -p "$(dirname "${dest}")"
+      mv "${src}" "${dest}"
+      echo "==> Moved ${src} -> ${dest}"
+    fi
+  done
+
+  for parent in "${REPO_ROOT}/clusters" "${REPO_ROOT}/sensitive/clusters"; do
+    [[ -d "${parent}" ]] || continue
+    while IFS= read -r src; do
+      [[ -d "${src}" ]] || continue
+      name="$(basename "${src}")"
+      case "${name}" in
+        aws | openstack) continue ;;
+      esac
+      dest="${K8S_PLAT_SENSITIVE_DIR}/${name}"
+      if [[ -e "${dest}" ]]; then
+        continue
+      fi
+      if [[ -f "${src}/terraform.tfstate" || -f "${src}/ssh.pem" || -f "${src}/kubeconfig" ]]; then
+        mv "${src}" "${dest}"
+        echo "==> Moved ${src} -> ${dest}"
+      fi
+    done < <(find "${parent}" -mindepth 1 -maxdepth 1 -type d 2>/dev/null)
+  done
+
+  # Flattened leftovers: sensitive/<cluster_name> -> sensitive/<env>/<cluster_name>
+  if [[ -d "${K8S_PLAT_SENSITIVE_DIR}" ]]; then
+    while IFS= read -r src; do
+      [[ -d "${src}" ]] || continue
+      name="$(basename "${src}")"
+      case "${name}" in
+        aws | openstack | kind) continue ;;
+      esac
+      dest=""
+      if [[ -d "${K8S_PLAT_CLUSTER_INPUT_DIR}/aws/${name}" ]]; then
+        dest="${K8S_PLAT_SENSITIVE_DIR}/aws/${name}"
+      elif [[ -d "${K8S_PLAT_CLUSTER_INPUT_DIR}/openstack/${name}" ]]; then
+        dest="${K8S_PLAT_SENSITIVE_DIR}/openstack/${name}"
+      fi
+      [[ -n "${dest}" && ! -e "${dest}" ]] || continue
+      if [[ -f "${src}/terraform.tfstate" || -f "${src}/ssh.pem" || -f "${src}/kubeconfig" || -f "${src}/cluster.env" ]]; then
+        mkdir -p "$(dirname "${dest}")"
+        mv "${src}" "${dest}"
+        echo "==> Moved ${src} -> ${dest}"
+      fi
+    done < <(find "${K8S_PLAT_SENSITIVE_DIR}" -mindepth 1 -maxdepth 1 -type d 2>/dev/null)
+  fi
+}
 
 k8s_plat_ini_get() {
   local file="$1"

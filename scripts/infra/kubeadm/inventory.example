@@ -1,15 +1,15 @@
-# Generated at clusters/<cluster_name>/cluster.env (gitignored). Do not copy secrets here.
+# Generated at sensitive/<env>/<cluster_name>/cluster.env (gitignored). Do not copy secrets here.
 #
-#   ./scripts/infra/up.sh aws default
-#   ./scripts/infra/kubeadm/up.sh default
+#   ./scripts/infra/up.sh aws k8s-aws
+#   ./scripts/infra/kubeadm/up.sh aws k8s-aws
 #
 # WORKER_HOSTS is space-separated (zero or more).
 
 SSH_USER=ubuntu
-SSH_KEY=clusters/k8s-aws/ssh.pem
+SSH_KEY=sensitive/aws/k8s-aws/ssh.pem
 CONTROL_PLANE_HOST=REPLACE_ME
 CONTROL_PLANE_ENDPOINT=REPLACE_ME
 WORKER_HOSTS=REPLACE_ME
 K8S_VERSION=1.32
 POD_CIDR=192.168.0.0/16
-KUBECONFIG_FILE=clusters/k8s-aws/kubeconfig
+KUBECONFIG_FILE=sensitive/aws/k8s-aws/kubeconfig

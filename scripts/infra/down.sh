@@ -19,7 +19,7 @@ Usage: $(basename "$0") [kind|aws|openstack] [cluster] [-y]
   aws          ./scripts/infra/aws/down.sh [cluster]
   openstack    ./scripts/infra/openstack/down.sh [cluster]
 
-  cluster     same config id used at up (default: default)
+  cluster     same config id used at up (required for aws/openstack)
   -y, --yes   terraform destroy -auto-approve on aws/openstack
   -h, --help
 EOF
@@ -58,7 +58,9 @@ if [[ "${PLATFORM}" == "kind" ]]; then
   exec "${REPO_ROOT}/scripts/infra/kind/down.sh" ${YES}
 fi
 
-if [[ -n "${CLUSTER}" ]]; then
-  exec "${REPO_ROOT}/scripts/infra/${PLATFORM}/down.sh" ${YES} --cluster "${CLUSTER}"
-fi
-exec "${REPO_ROOT}/scripts/infra/${PLATFORM}/down.sh" ${YES}
+# shellcheck source=scripts/lib/paths.sh
+source "${REPO_ROOT}/scripts/lib/paths.sh"
+# shellcheck source=scripts/lib/cluster-config.sh
+source "${REPO_ROOT}/scripts/lib/cluster-config.sh"
+k8s_plat_require_cluster_spec "${PLATFORM}" "${CLUSTER}" || exit 1
+exec "${REPO_ROOT}/scripts/infra/${PLATFORM}/down.sh" ${YES} --cluster "${CLUSTER}"
