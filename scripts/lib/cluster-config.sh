@@ -17,7 +17,6 @@ k8s_plat_resolve_cluster_config() {
   local create="${3:-1}"
   local dir="${K8S_PLAT_CONFIG_DIR}/${platform}/clusters"
   local example="${dir}/default.yaml.example"
-  local legacy="${K8S_PLAT_CONFIG_DIR}/${platform}/infra.yaml"
   local resolved=""
   local dest=""
 
@@ -33,9 +32,6 @@ k8s_plat_resolve_cluster_config() {
     resolved="${dir}/${spec}"
   elif [[ -f "${dir}/${spec}.yaml" ]]; then
     resolved="${dir}/${spec}.yaml"
-  elif [[ "${spec}" == "default" && -f "${legacy}" ]]; then
-    resolved="${legacy}"
-    echo "==> Using legacy ${legacy}; copy it to ${dir}/default.yaml" >&2
   elif [[ "${spec}" == "default" && "${create}" == "1" && -f "${example}" ]]; then
     dest="${dir}/default.yaml"
     cp "${example}" "${dest}"

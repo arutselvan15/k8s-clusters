@@ -67,7 +67,7 @@ Index: [`docs/README.md`](./README.md) · Model: [`platform-lifecycle.md`](./pla
 ./scripts/infra/up.sh openstack default && ./scripts/infra/kubeadm/up.sh default
 
 # Day 1 + 2 — same
-source scripts/lib/kubeconfig-setup.sh clusters/kind/kubeconfig   # or aws-dev.yaml / os-dev.yaml
+source scripts/lib/kubeconfig-setup.sh clusters/kind/kubeconfig   # or clusters/<cluster_name>/kubeconfig
 ./bootstrap/bootstrap.sh dev
 git push origin main
 ./scripts/gitops/start.sh dev
@@ -94,7 +94,7 @@ Kind one-shot Day 0+1: `./scripts/bootstrap/up.sh`
 | [`infra/README.md`](../infra/README.md) | Day 0 dispatcher |
 | [`bootstrap/README.md`](../bootstrap/README.md) | Day 1 runbook |
 | [`gitops/README.md`](../gitops/README.md) | Day 2 runbook |
-| [`.gitignore`](../.gitignore) | Ignores `config/**` secrets, `clusters/**` outputs, tfstate |
+| [`.gitignore`](../.gitignore) | Ignores `config/` secrets, `clusters/**` outputs, tfstate |
 
 ---
 

@@ -21,11 +21,7 @@ k8s_plat_require_os_credentials() {
   mkdir -p "${K8S_PLAT_CONFIG_DIR}/openstack" "${K8S_PLAT_CONFIG_DIR}/openstack/clusters"
 
   if [[ ! -f "${OS_CLIENT_CONFIG_FILE}" ]]; then
-    if [[ -f "${REPO_ROOT}/.openstack/clouds.yaml" ]]; then
-      cp "${REPO_ROOT}/.openstack/clouds.yaml" "${OS_CLIENT_CONFIG_FILE}"
-      chmod 600 "${OS_CLIENT_CONFIG_FILE}"
-      echo "==> Migrated .openstack/clouds.yaml -> ${OS_CLIENT_CONFIG_FILE}"
-    elif [[ -f "${HOME}/.config/openstack/clouds.yaml" ]]; then
+    if [[ -f "${HOME}/.config/openstack/clouds.yaml" ]]; then
       cp "${HOME}/.config/openstack/clouds.yaml" "${OS_CLIENT_CONFIG_FILE}"
       chmod 600 "${OS_CLIENT_CONFIG_FILE}"
       echo "==> Copied ~/.config/openstack/clouds.yaml -> ${OS_CLIENT_CONFIG_FILE} (gitignored)"

@@ -60,7 +60,7 @@ resource "aws_route_table_association" "public" {
 }
 
 # Step 4 — security group: stateful firewall (default deny inbound).
-# admin_cidr is who may SSH / kubectl from the internet (from config/aws/infra.yaml).
+# admin_cidr is who may SSH / kubectl from the internet (from the cluster YAML).
 # self = true lets control-plane and worker talk on every port (kubelet, CNI, 6443).
 resource "aws_security_group" "lab" {
   name        = "${var.cluster_name}-sg"

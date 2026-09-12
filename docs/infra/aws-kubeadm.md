@@ -118,10 +118,10 @@ kubectl get nodes
 From repo root on your Mac:
 
 ```bash
-ssh -i clusters/aws/ssh.pem ubuntu@$(terraform -chdir=infra/terraform/environments/ec2 output -raw control_plane_public_ip) \
-  'sudo cat /etc/kubernetes/admin.conf' > clusters/aws/kubeconfig
-chmod 600 clusters/aws/kubeconfig
-source scripts/lib/kubeconfig-setup.sh clusters/aws/kubeconfig
+ssh -i clusters/k8s-aws/ssh.pem ubuntu@$(terraform -chdir=infra/terraform/environments/ec2 output -raw control_plane_public_ip) \
+  'sudo cat /etc/kubernetes/admin.conf' > clusters/k8s-aws/kubeconfig
+chmod 600 clusters/k8s-aws/kubeconfig
+source scripts/lib/kubeconfig-setup.sh clusters/k8s-aws/kubeconfig
 kubectl get nodes -o wide
 ```
 
@@ -140,8 +140,8 @@ Practice in namespace `cka-practice`: taints, drains, NetworkPolicy, RBAC, PV/PV
 ## Reset before terraform destroy
 
 ```bash
-./scripts/infra/kubeadm/reset.sh
-./scripts/infra/down.sh aws -y
+./scripts/infra/kubeadm/reset.sh default
+./scripts/infra/down.sh aws default -y
 ```
 
 Or by hand: `kubeadm reset -f` on workers then control plane, then [Lesson AWS-15](./aws.md#lesson-aws-15-teardown).

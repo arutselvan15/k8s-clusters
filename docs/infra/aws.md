@@ -80,7 +80,7 @@ The current `main.tf` applies **all** of AWS-1–7 in one `./scripts/infra/up.sh
 **Learn:** Provider, working directory, local state. `data` = ask AWS; `resource` = create something you pay to keep.
 
 ```bash
-./scripts/infra/up.sh aws
+./scripts/infra/up.sh aws default
 ```
 
 Or by hand:
@@ -150,7 +150,7 @@ Tighten `admin_cidr` to your IP `/32` before anything other than a throwaway lab
 terraform -chdir=infra/terraform/environments/ec2 output ssh_control_plane
 ```
 
-PEM: `clusters/aws/ssh.pem` (gitignored). User: `ubuntu`.
+PEM: `clusters/k8s-aws/ssh.pem` (gitignored). User: `ubuntu`.
 
 **Cost:** ~t3.medium + disk + public IPv4 while running.
 
@@ -162,7 +162,7 @@ PEM: `clusters/aws/ssh.pem` (gitignored). User: `ubuntu`.
 
 ## Lesson AWS-6 — Worker EC2
 
-`worker_nodes` in `config/aws/clusters/default.yaml` (default 1). Extra VMs are `k8s-aws-worker-2`, … First worker stays `aws_instance.worker` so state is not replaced.
+`worker_nodes` in `config/aws/clusters/default.yaml` (default 1). Extra VMs are `k8s-aws-wk-2`, … First worker stays `aws_instance.worker` so state is not replaced.
 
 **Checkpoint:** Both instances in the same subnet; SG `self` allows CP ↔ worker.
 
@@ -176,7 +176,7 @@ PEM: `clusters/aws/ssh.pem` (gitignored). User: `ubuntu`.
 terraform -chdir=infra/terraform/environments/ec2 output
 ```
 
-`aws/up.sh` writes `clusters/aws/cluster.env` (gitignored) for kubeadm.
+`aws/up.sh` writes `clusters/k8s-aws/cluster.env` (gitignored) for kubeadm.
 
 **Next:** [aws-kubeadm.md](./aws-kubeadm.md) — automated `./scripts/infra/kubeadm/up.sh` or manual K-1–K-4. Then [bootstrap](../bootstrap/) and [gitops](../gitops/).
 
@@ -186,12 +186,12 @@ terraform -chdir=infra/terraform/environments/ec2 output
 
 ## Lesson AWS-15 — Teardown
 
-Kubernetes only (keep VMs): `./scripts/infra/kubeadm/reset.sh`
+Kubernetes only (keep VMs): `./scripts/infra/kubeadm/reset.sh default`
 
 Then:
 
 ```bash
-./scripts/infra/down.sh aws -y
+./scripts/infra/down.sh aws default -y
 ```
 
 **Console:** No EC2, no VPC named `k8s-aws-*`.

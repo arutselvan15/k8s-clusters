@@ -34,7 +34,7 @@ AWS name → OpenStack name: existing tenant net (not a new VPC), security group
 | [5](#step-5--control-plane-vm) | Ubuntu VM on existing net + SSH | in main.tf |
 | [6](#step-6--worker-vms) | `worker_nodes` Ubuntu VMs | in main.tf |
 | [7](#step-7--ssh-and-outputs) | PEM, fixed IPs, inventory | in main.tf |
-| [8](#step-8--kubeadm) | Same kubeadm scripts as AWS | `./scripts/infra/kubeadm/up.sh -i clusters/openstack/cluster.env` |
+| [8](#step-8--kubeadm) | Same kubeadm scripts as AWS | `./scripts/infra/kubeadm/up.sh default` |
 
 ---
 
@@ -51,7 +51,7 @@ chmod 600 config/openstack/clouds.yaml
 ```
 
 Edit `clouds.yaml`: `auth_url`, username/password **or** application credentials, `project_name`, `region_name`.  
-Edit `config`: `image_name`, `node_flavor`, `network_name` (existing Neutron network, e.g. `tenant-internal-direct-net`).
+Edit `config/openstack/clusters/default.yaml`: `image_name`, `node_flavor`, `network_name` (existing Neutron network, e.g. `tenant-internal-direct-net`).
 
 If the OpenStack CLI is installed:
 
@@ -111,17 +111,17 @@ Same intent as AWS:
 
 **Learn:** Nova instance, boot **volume**. The port sits on `tenant-internal-direct-net`. The address your laptop SSHs to is that **fixed IP** (no floating IP). You need to be on a network that can reach that tenant net (typical on Cisco campus/VPN).
 
-User is **`ssh_user`** from config (`ubuntu` for Ubuntu images). Key: **`clusters/openstack/ssh.pem`**.
+User is **`ssh_user`** from config (`ubuntu` for Ubuntu images). Key: **`clusters/k8s-os/ssh.pem`**.
 
 ```bash
-ssh -i clusters/openstack/ssh.pem ubuntu@$(terraform -chdir=infra/terraform/environments/openstack output -raw control_plane_public_ip)
+ssh -i clusters/k8s-os/ssh.pem ubuntu@$(terraform -chdir=infra/terraform/environments/openstack output -raw control_plane_public_ip)
 ```
 
 ---
 
 ## Step 6 — Worker VMs
 
-`worker_nodes` in `config/openstack/clusters/default.yaml` (default 1). Each worker gets a port and instance on the same existing network. Names: `<cluster_name>-worker-1`, …
+`worker_nodes` in `config/openstack/clusters/default.yaml` (default 1). Each worker gets a port and instance on the same existing network. Names: `<cluster_name>-<worker_prefix>-1`, …
 
 ---
 
@@ -131,7 +131,7 @@ ssh -i clusters/openstack/ssh.pem ubuntu@$(terraform -chdir=infra/terraform/envi
 terraform -chdir=infra/terraform/environments/openstack output
 ```
 
-`./scripts/infra/openstack/up.sh` writes **`clusters/openstack/cluster.env`** (gitignored) for kubeadm. No Terraform in the kubeadm scripts.
+`./scripts/infra/openstack/up.sh` writes **`clusters/k8s-os/cluster.env`** (gitignored) for kubeadm. No Terraform in the kubeadm scripts.
 
 ---
 
@@ -140,13 +140,13 @@ terraform -chdir=infra/terraform/environments/openstack output
 Same scripts as AWS. Point at the OpenStack inventory:
 
 ```bash
-./scripts/infra/kubeadm/up.sh -i clusters/openstack/cluster.env
-source scripts/lib/kubeconfig-setup.sh clusters/openstack/kubeconfig
+./scripts/infra/kubeadm/up.sh default
+source scripts/lib/kubeconfig-setup.sh clusters/k8s-os/kubeconfig
 kubectl get nodes -o wide
 ```
 
-Reset Kubernetes only: `./scripts/infra/kubeadm/reset.sh -i clusters/openstack/cluster.env`  
-Destroy VMs: `./scripts/infra/openstack/down.sh -y`
+Reset Kubernetes only: `./scripts/infra/kubeadm/reset.sh default`  
+Destroy VMs: `./scripts/infra/openstack/down.sh default -y`
 
 ---
 

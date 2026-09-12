@@ -60,11 +60,7 @@ k8s_plat_require_aws_credentials() {
   mkdir -p "${K8S_PLAT_CONFIG_DIR}/aws" "${K8S_PLAT_CONFIG_DIR}/aws/clusters"
 
   if [[ ! -f "${AWS_SHARED_CREDENTIALS_FILE}" ]]; then
-    if [[ -f "${REPO_ROOT}/.aws/credentials" ]]; then
-      cp "${REPO_ROOT}/.aws/credentials" "${AWS_SHARED_CREDENTIALS_FILE}"
-      chmod 600 "${AWS_SHARED_CREDENTIALS_FILE}"
-      echo "==> Migrated .aws/credentials -> ${AWS_SHARED_CREDENTIALS_FILE}"
-    elif [[ -f "${HOME}/.aws/credentials" ]]; then
+    if [[ -f "${HOME}/.aws/credentials" ]]; then
       cp "${HOME}/.aws/credentials" "${AWS_SHARED_CREDENTIALS_FILE}"
       chmod 600 "${AWS_SHARED_CREDENTIALS_FILE}"
       echo "==> Copied ~/.aws/credentials -> ${AWS_SHARED_CREDENTIALS_FILE} (gitignored)"
@@ -78,9 +74,6 @@ k8s_plat_require_aws_credentials() {
   chmod 600 "${AWS_SHARED_CREDENTIALS_FILE}"
 
   if [[ ! -f "${AWS_CONFIG_FILE}" ]]; then
-    if [[ -f "${REPO_ROOT}/.aws/config" ]]; then
-      echo "==> Found legacy .aws/config. Copy region into ${AWS_CONFIG_FILE} (cli.conf.example)." >&2
-    fi
     cp "${K8S_PLAT_CONFIG_DIR}/aws/cli.conf.example" "${AWS_CONFIG_FILE}"
     echo "==> Wrote ${AWS_CONFIG_FILE} from cli.conf.example"
   fi

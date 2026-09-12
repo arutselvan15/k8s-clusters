@@ -14,13 +14,9 @@ terraform.tfvars
 # Lab inputs (copy from *.example; never commit secrets)
 config/aws/credentials
 config/aws/cli.conf
-config/aws/infra.yaml
-config/aws/infra.conf
 config/aws/clusters/*.yaml
 !config/aws/clusters/*.yaml.example
 config/openstack/clouds.yaml
-config/openstack/infra.yaml
-config/openstack/infra.conf
 config/openstack/clusters/*.yaml
 !config/openstack/clusters/*.yaml.example
 
@@ -28,7 +24,7 @@ config/openstack/clusters/*.yaml
 clusters/**
 !clusters/README.md
 
-# Legacy locations (if leftover local files exist)
+# Leftover files under these dirs must never be committed
 .aws/credentials
 .aws/config
 .aws/*.pem

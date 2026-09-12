@@ -77,4 +77,4 @@ if [[ -f "${KUBECONFIG_FILE}" ]]; then
   echo "Removed ${KUBECONFIG_FILE}"
 fi
 
-echo "Kubernetes removed from the nodes. Reinstall: ./scripts/infra/kubeadm/up.sh"
+echo "Kubernetes removed from the nodes. Reinstall: ./scripts/infra/kubeadm/up.sh <cluster>"
