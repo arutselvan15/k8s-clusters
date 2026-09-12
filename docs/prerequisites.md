@@ -38,9 +38,9 @@ Edit `bootstrap.env` (gitignored) for `GITHUB_PAT`, SSH key, or `ARGOCD_ADMIN_PA
 Point the shell at the cluster you just built, then run the same bootstrap and GitOps commands:
 
 ```bash
-source scripts/lib/kubeconfig-setup.sh .kube/kind-dev.yaml    # Kind
-source scripts/lib/kubeconfig-setup.sh .kube/aws-dev.yaml     # AWS after kubeadm
-source scripts/lib/kubeconfig-setup.sh .kube/os-dev.yaml      # OpenStack after kubeadm
+source scripts/lib/kubeconfig-setup.sh clusters/kind/kubeconfig    # Kind
+source scripts/lib/kubeconfig-setup.sh clusters/k8s-aws/kubeconfig     # AWS after kubeadm
+source scripts/lib/kubeconfig-setup.sh clusters/k8s-os/kubeconfig      # OpenStack after kubeadm
 ```
 
 GitOps profile **`dev`** (`bootstrap.sh dev`, `gitops/clusters/dev/`) is the cluster folder name, not a second Kind cluster.

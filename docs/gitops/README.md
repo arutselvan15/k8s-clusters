@@ -7,7 +7,7 @@ Argo CD (from [bootstrap](../bootstrap/)) syncs this tree from Git. Add a new pl
 ## Seed (once per cluster)
 
 ```bash
-source scripts/lib/kubeconfig-setup.sh .kube/<kubeconfig>.yaml
+source scripts/lib/kubeconfig-setup.sh clusters/<env>/kubeconfig
 git push origin main          # Argo clones GitHub, not your laptop
 ./scripts/gitops/start.sh dev
 ```

@@ -16,7 +16,7 @@ infra/terraform/
 
 ```bash
 ./scripts/infra/up.sh kind
-source scripts/lib/kubeconfig-setup.sh .kube/kind-dev.yaml
+source scripts/lib/kubeconfig-setup.sh clusters/kind/kubeconfig
 ```
 
 Host ports **8080 → 80** and **8443 → 443** on the control-plane node (Argo UI later: https://argocd.dev:8443). Teardown: `./scripts/infra/down.sh kind`
@@ -26,11 +26,12 @@ Host ports **8080 → 80** and **8443 → 443** on the control-plane node (Argo 
 Checklist: **[environments/ec2/STEPS.md](environments/ec2/STEPS.md)**
 
 ```bash
-cp .aws/credentials.example .aws/credentials && chmod 600 .aws/credentials
-cp .aws/config.example .aws/config
-./scripts/infra/up.sh aws
-./scripts/infra/kubeadm/up.sh
-source scripts/lib/kubeconfig-setup.sh .kube/aws-dev.yaml
+cp config/aws/credentials.example config/aws/credentials && chmod 600 config/aws/credentials
+cp config/aws/cli.conf.example config/aws/cli.conf
+cp config/aws/clusters/default.yaml.example config/aws/clusters/default.yaml
+./scripts/infra/up.sh aws default
+./scripts/infra/kubeadm/up.sh default
+source scripts/lib/kubeconfig-setup.sh clusters/k8s-aws/kubeconfig
 ```
 
 ## openstack
@@ -38,11 +39,11 @@ source scripts/lib/kubeconfig-setup.sh .kube/aws-dev.yaml
 Checklist: **[environments/openstack/STEPS.md](environments/openstack/STEPS.md)**
 
 ```bash
-cp .openstack/clouds.yaml.example .openstack/clouds.yaml && chmod 600 .openstack/clouds.yaml
-cp .openstack/config.example .openstack/config
-./scripts/infra/up.sh openstack
-./scripts/infra/kubeadm/up.sh -i .kube/os-inventory.env
-source scripts/lib/kubeconfig-setup.sh .kube/os-dev.yaml
+cp config/openstack/clouds.yaml.example config/openstack/clouds.yaml && chmod 600 config/openstack/clouds.yaml
+cp config/openstack/clusters/default.yaml.example config/openstack/clusters/default.yaml
+./scripts/infra/up.sh openstack default
+./scripts/infra/kubeadm/up.sh default
+source scripts/lib/kubeconfig-setup.sh clusters/k8s-os/kubeconfig
 ```
 
 Terraform does **not** create or destroy the existing Neutron network.
@@ -58,7 +59,7 @@ terraform version   # >= 1.5
 ## Day 1
 
 ```bash
-source scripts/lib/kubeconfig-setup.sh .kube/kind-dev.yaml   # or aws-dev / os-dev
+source scripts/lib/kubeconfig-setup.sh clusters/kind/kubeconfig   # or aws-dev / os-dev
 ./bootstrap/bootstrap.sh dev
 ```
 

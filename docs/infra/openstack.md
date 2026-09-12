@@ -5,22 +5,22 @@ Same split as AWS: **Terraform = VMs**, **kubeadm = Kubernetes**. After nodes ar
 Checklist: [infra/terraform/environments/openstack/STEPS.md](../../infra/terraform/environments/openstack/STEPS.md).
 
 ```bash
-cp .openstack/clouds.yaml.example .openstack/clouds.yaml
-cp .openstack/config.example .openstack/config
-chmod 600 .openstack/clouds.yaml
+cp config/openstack/clouds.yaml.example config/openstack/clouds.yaml
+cp config/openstack/clusters/default.yaml.example config/openstack/clusters/default.yaml
+chmod 600 config/openstack/clouds.yaml
 # set cloud, image_name, node_flavor, network_name (existing Neutron net)
-./scripts/infra/up.sh openstack
-./scripts/infra/kubeadm/up.sh -i .kube/os-inventory.env
-source scripts/lib/kubeconfig-setup.sh .kube/os-dev.yaml
+./scripts/infra/up.sh openstack default
+./scripts/infra/kubeadm/up.sh default
+source scripts/lib/kubeconfig-setup.sh clusters/k8s-os/kubeconfig
 ```
 
-`cloud =` in `.openstack/config` must match the YAML key under `clouds:` in `clouds.yaml`. Application credentials are already project-scoped — do not add `project_name` in auth unless your cloud requires it.
+`cloud:` in `config/openstack/clusters/default.yaml` must match a key under `clouds:` in `clouds.yaml`. Application credentials are already project-scoped — do not add `project_name` in auth unless your cloud requires it.
 
 Terraform **looks up** `network_name` (for example `tenant-internal-direct-net`). It does **not** create a network, subnet, router, or floating IP. SSH uses the instance **fixed IP**; your laptop must be able to reach that tenant net (campus/VPN).
 
-**Tear down:** `./scripts/infra/down.sh openstack -y` deletes VMs, ports, security group, and keypair. **It does not delete the existing network.**
+**Tear down:** `./scripts/infra/down.sh openstack default -y` deletes VMs, ports, security group, and keypair. **It does not delete the existing network.**
 
-Same kubeadm remote scripts as AWS. Reset Kubernetes only: `./scripts/infra/kubeadm/reset.sh -i .kube/os-inventory.env`.
+Same kubeadm remote scripts as AWS. Reset Kubernetes only: `./scripts/infra/kubeadm/reset.sh default`.
 
 **CodeGuard:** never commit `clouds.yaml` or paste `application_credential_secret` into chat.
 

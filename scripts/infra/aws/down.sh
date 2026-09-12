@@ -5,17 +5,19 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 ENV_DIR="${REPO_ROOT}/infra/terraform/environments/ec2"
-KUBECONFIG_FILE="${REPO_ROOT}/.kube/aws-dev.yaml"
-INVENTORY_FILE="${REPO_ROOT}/.kube/aws-inventory.env"
 AUTO_APPROVE=""
+CLUSTER_SPEC="default"
 K8S_TF_VAR_ARGS=()
+
+# shellcheck source=scripts/lib/aws-env.sh
+source "$REPO_ROOT/scripts/lib/aws-env.sh"
 
 usage() {
   cat <<EOF
-Usage: ./scripts/infra/aws/down.sh [-y]
+Usage: ./scripts/infra/aws/down.sh [cluster] [-y]
 
-Destroy the AWS EC2 lab (terraform environments/ec2).
-Does not delete anything outside this Terraform state.
+Destroy the AWS EC2 lab for one cluster config.
+Does not delete anything outside this cluster's Terraform state.
   -y, --yes   terraform destroy -auto-approve
 EOF
 }
@@ -29,10 +31,12 @@ while [[ $# -gt 0 ]]; do
     -y | --yes)
       AUTO_APPROVE="-auto-approve"
       ;;
+    -c | --cluster)
+      CLUSTER_SPEC="${2:?cluster config required}"
+      shift
+      ;;
     *)
-      echo "Unknown argument: $1" >&2
-      usage >&2
-      exit 1
+      CLUSTER_SPEC="$1"
       ;;
   esac
   shift
@@ -43,29 +47,27 @@ if [[ ! -d "$ENV_DIR" ]]; then
   exit 1
 fi
 
-if [[ ! -d "${ENV_DIR}/.terraform" ]]; then
-  echo "No Terraform state in ${ENV_DIR}; nothing to destroy."
+k8s_plat_resolve_cluster_config aws "${CLUSTER_SPEC}" 0
+k8s_plat_apply_cluster_outputs
+
+if [[ ! -f "${K8S_PLAT_TFSTATE}" && ! -d "${ENV_DIR}/.terraform" ]]; then
+  echo "No Terraform state for cluster ${K8S_PLAT_CLUSTER_NAME}; nothing to destroy."
   exit 0
 fi
 
-echo "==> Destroy AWS: ${ENV_DIR}"
+echo "==> Destroy AWS cluster ${K8S_PLAT_CLUSTER_NAME}: ${ENV_DIR}"
 "$REPO_ROOT/scripts/lib/require-tools.sh" terraform aws
-# shellcheck source=scripts/lib/aws-env.sh
-source "$REPO_ROOT/scripts/lib/aws-env.sh"
 k8s_plat_require_aws_credentials
 k8s_plat_load_provider_vars
 
 cd "$ENV_DIR"
+k8s_plat_terraform_init "$ENV_DIR"
 # shellcheck disable=SC2086
 terraform destroy -input=false $AUTO_APPROVE "${K8S_TF_VAR_ARGS[@]}"
 
-if [[ -f "$KUBECONFIG_FILE" ]]; then
-  rm -f "$KUBECONFIG_FILE"
-  echo "Removed $KUBECONFIG_FILE"
-fi
-if [[ -f "$INVENTORY_FILE" ]]; then
-  rm -f "$INVENTORY_FILE"
-  echo "Removed $INVENTORY_FILE"
+if [[ -d "${K8S_PLAT_CLUSTER_DIR}" ]]; then
+  rm -f "${K8S_PLAT_CLUSTER_KUBECONFIG}" "${K8S_PLAT_CLUSTER_ENV}" "${K8S_PLAT_CLUSTER_KNOWN_HOSTS}"
+  echo "Removed local kubeconfig/inventory under ${K8S_PLAT_CLUSTER_DIR}"
 fi
 
-echo "AWS cluster destroyed."
+echo "AWS cluster ${K8S_PLAT_CLUSTER_NAME} destroyed."

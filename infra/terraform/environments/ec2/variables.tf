@@ -6,13 +6,30 @@ variable "aws_region" {
 variable "aws_profile" {
   type        = string
   default     = "default"
-  description = "Profile name in k8s-platform/.aws/credentials."
+  description = "Profile name in k8s-platform/config/aws/credentials."
 }
 
 variable "cluster_name" {
   type        = string
   default     = "k8s-aws"
-  description = "Name prefix for AWS tags (from .aws/config)."
+  description = "Cluster identity and Name prefix (from cluster YAML)."
+}
+
+variable "control_plane_prefix" {
+  type        = string
+  default     = "cp"
+  description = "Control-plane instance Name: {cluster_name}-{control_plane_prefix}."
+}
+
+variable "worker_prefix" {
+  type        = string
+  default     = "wk"
+  description = "Worker instance Name: {cluster_name}-{worker_prefix}-N."
+}
+
+variable "ssh_private_key_path" {
+  type        = string
+  description = "Local path for the generated SSH private key (clusters/<cluster_name>/ssh.pem)."
 }
 
 variable "vpc_cidr" {

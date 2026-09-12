@@ -42,13 +42,13 @@ Details: [`env/README.md`](env/README.md). Repo manifests: [`argocd/repos/README
 Kubeconfig (cluster targeting) is separate:
 
 ```bash
-source scripts/lib/kubeconfig-setup.sh .kube/kind-dev.yaml
+source scripts/lib/kubeconfig-setup.sh clusters/kind/kubeconfig
 ```
 
 ## Run Day 1
 
 ```bash
-source scripts/lib/kubeconfig-setup.sh .kube/kind-dev.yaml
+source scripts/lib/kubeconfig-setup.sh clusters/kind/kubeconfig
 ./bootstrap/bootstrap.sh dev          # or omit overlay → ARGOCD_OVERLAY / dev
 # equivalent: ./bootstrap/argocd/install.sh dev
 ```

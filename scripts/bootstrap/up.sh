@@ -38,7 +38,7 @@ echo "==> Day 0: Kind cluster"
 "$REPO_ROOT/scripts/infra/kind/up.sh"
 
 echo "==> Kubeconfig"
-KUBECONFIG_FILE="${REPO_ROOT}/.kube/kind-dev.yaml"
+KUBECONFIG_FILE="${REPO_ROOT}/clusters/kind/kubeconfig"
 # shellcheck source=scripts/lib/kubeconfig-setup.sh
 source "$REPO_ROOT/scripts/lib/kubeconfig-setup.sh" "$KUBECONFIG_FILE"
 

@@ -1,13 +1,30 @@
 variable "cloud" {
   type        = string
   default     = "lab"
-  description = "Cloud name in k8s-platform/.openstack/clouds.yaml."
+  description = "Cloud name in k8s-platform/config/openstack/clouds.yaml."
 }
 
 variable "cluster_name" {
   type        = string
   default     = "k8s-os"
-  description = "Name prefix for OpenStack objects."
+  description = "Cluster identity and OpenStack object prefix."
+}
+
+variable "control_plane_prefix" {
+  type        = string
+  default     = "cp"
+  description = "Control-plane name: {cluster_name}-{control_plane_prefix}."
+}
+
+variable "worker_prefix" {
+  type        = string
+  default     = "wk"
+  description = "Worker name: {cluster_name}-{worker_prefix}-N."
+}
+
+variable "ssh_private_key_path" {
+  type        = string
+  description = "Local path for the generated SSH private key (clusters/<cluster_name>/ssh.pem)."
 }
 
 variable "admin_cidr" {

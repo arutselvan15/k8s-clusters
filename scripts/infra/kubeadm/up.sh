@@ -6,21 +6,21 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 REMOTE_DIR="${REPO_ROOT}/scripts/infra/kubeadm/remote"
-INVENTORY_FILE="${REPO_ROOT}/.kube/aws-inventory.env"
+INVENTORY_FILE=""
+CLUSTER_SPEC="default"
 
 usage() {
   cat <<EOF
-Usage: ./scripts/infra/kubeadm/up.sh [-i inventory-file]
+Usage: ./scripts/infra/kubeadm/up.sh [cluster] [-i inventory-file]
 
-Reads SSH hosts and kubeadm settings from an inventory (KEY=VAL).
+Reads SSH hosts and kubeadm settings from one cluster inventory (KEY=VAL).
 Does not call Terraform.
 
-  -i, --inventory FILE   default: .kube/aws-inventory.env
-                         OpenStack: .kube/os-inventory.env (written by openstack/up.sh)
+  cluster                config id, cluster_name, or yaml path (default: default)
+  -i, --inventory FILE   skip config lookup; use this cluster.env
   -h, --help
 
-Example: scripts/infra/kubeadm/inventory.example
-Reset:   ./scripts/infra/kubeadm/reset.sh [-i FILE]
+Reset:   ./scripts/infra/kubeadm/reset.sh [cluster]
 EOF
 }
 
@@ -34,16 +34,26 @@ while [[ $# -gt 0 ]]; do
       INVENTORY_FILE="${2:?inventory file required}"
       shift
       ;;
+    -c | --cluster)
+      CLUSTER_SPEC="${2:?cluster config required}"
+      shift
+      ;;
     *)
-      echo "Unknown argument: $1" >&2
-      usage >&2
-      exit 1
+      CLUSTER_SPEC="$1"
       ;;
   esac
   shift
 done
 
-if [[ "${INVENTORY_FILE}" != /* ]]; then
+# shellcheck source=scripts/lib/paths.sh
+source "$REPO_ROOT/scripts/lib/paths.sh"
+# shellcheck source=scripts/lib/cluster-config.sh
+source "$REPO_ROOT/scripts/lib/cluster-config.sh"
+
+if [[ -z "${INVENTORY_FILE}" ]]; then
+  k8s_plat_resolve_kubeadm_inventory "${CLUSTER_SPEC}"
+  INVENTORY_FILE="${K8S_PLAT_KUBEADM_INVENTORY}"
+elif [[ "${INVENTORY_FILE}" != /* ]]; then
   INVENTORY_FILE="${REPO_ROOT}/${INVENTORY_FILE}"
 fi
 

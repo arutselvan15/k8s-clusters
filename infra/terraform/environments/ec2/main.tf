@@ -60,7 +60,7 @@ resource "aws_route_table_association" "public" {
 }
 
 # Step 4 — security group: stateful firewall (default deny inbound).
-# admin_cidr is who may SSH / kubectl from the internet (from .aws/config).
+# admin_cidr is who may SSH / kubectl from the internet (from config/aws/infra.yaml).
 # self = true lets control-plane and worker talk on every port (kubelet, CNI, 6443).
 resource "aws_security_group" "lab" {
   name        = "${var.cluster_name}-sg"
@@ -131,7 +131,7 @@ resource "aws_key_pair" "lab" {
 
 resource "local_file" "ssh_private_key" {
   content         = tls_private_key.lab.private_key_openssh
-  filename        = abspath("${path.root}/../../../../.aws/${var.cluster_name}-ssh.pem")
+  filename        = abspath(var.ssh_private_key_path)
   file_permission = "0600"
 }
 
@@ -149,7 +149,7 @@ resource "aws_instance" "control_plane" {
   }
 
   tags = {
-    Name = "${var.cluster_name}-control-plane"
+    Name = "${var.cluster_name}-${var.control_plane_prefix}"
     Role = "control-plane"
   }
 }
@@ -169,7 +169,7 @@ resource "aws_instance" "worker" {
   }
 
   tags = {
-    Name = "${var.cluster_name}-worker"
+    Name = "${var.cluster_name}-${var.worker_prefix}-1"
     Role = "worker"
   }
 }
@@ -192,7 +192,7 @@ resource "aws_instance" "extra_workers" {
   }
 
   tags = {
-    Name = "${var.cluster_name}-worker-${count.index + 2}"
+    Name = "${var.cluster_name}-${var.worker_prefix}-${count.index + 2}"
     Role = "worker"
   }
 }

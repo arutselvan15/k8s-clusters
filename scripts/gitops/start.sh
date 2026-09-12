@@ -16,7 +16,7 @@ Safe to re-run (kubectl apply).
 Profiles: dev, stg, prod (must match gitops/clusters/<profile>/)
 
 Example:
-  source scripts/lib/kubeconfig-setup.sh .kube/kind-dev.yaml
+  source scripts/lib/kubeconfig-setup.sh clusters/kind/kubeconfig
   $(basename "$0") dev
 
 See: gitops/README.md

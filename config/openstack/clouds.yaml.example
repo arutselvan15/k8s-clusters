@@ -1,9 +1,9 @@
 # Copy to clouds.yaml (gitignored). Never commit real passwords or app-cred secrets.
-#   cp .openstack/clouds.yaml.example .openstack/clouds.yaml
-#   chmod 600 .openstack/clouds.yaml
+#   cp config/openstack/clouds.yaml.example config/openstack/clouds.yaml
+#   chmod 600 config/openstack/clouds.yaml
 #
 # Terraform and the OpenStack CLI read this via OS_CLIENT_CONFIG_FILE.
-# The cloud name must match `cloud =` in .openstack/config (default: lab).
+# The cloud name must match `cloud:` in the cluster YAML (default: lab).
 
 clouds:
   lab:

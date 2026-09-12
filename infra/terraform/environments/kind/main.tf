@@ -5,7 +5,7 @@ module "cluster" {
   kubernetes_version  = var.kubernetes_version
   control_plane_nodes = var.control_plane_nodes
   worker_nodes        = var.worker_nodes
-  kubeconfig_path     = abspath("${path.root}/../../../../.kube/kind-dev.yaml")
+  kubeconfig_path     = abspath("${path.root}/../../../../clusters/kind/kubeconfig")
 
   extra_port_mappings = [
     { container_port = 80, host_port = 8080, protocol = "TCP" },

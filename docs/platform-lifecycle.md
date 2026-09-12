@@ -26,7 +26,7 @@ Index: [README.md](./README.md) · Resume: [continue.md](./continue.md)
 | **Day 1** | Can Git manage the cluster? | `bootstrap/` — same Helm install and repo Secrets | Overlay values (hostname, ingress) if a cluster needs them |
 | **Day 2** | What runs on the cluster? | `gitops/` apps, App of Apps, sync waves | Cluster folder / Helm values (e.g. Kind `hostPort` vs cloud `LoadBalancer`) |
 
-Kubeconfig path is the only required switch after Day 0: `.kube/kind-dev.yaml`, `.kube/aws-dev.yaml`, or `.kube/os-dev.yaml`.
+Kubeconfig path is the only required switch after Day 0: `clusters/kind/kubeconfig`, or `clusters/<cluster_name>/kubeconfig` for AWS/OpenStack.
 
 ## What does not belong where
 
@@ -38,9 +38,9 @@ Kubeconfig path is the only required switch after Day 0: `.kube/kind-dev.yaml`, 
 
 | Environment | Dispatcher | After Terraform | Kubeconfig |
 |-------------|------------|-----------------|------------|
-| `kind` | `./scripts/infra/up.sh kind` | Cluster is ready | `.kube/kind-dev.yaml` |
-| `ec2` | `./scripts/infra/up.sh aws` | `./scripts/infra/kubeadm/up.sh` | `.kube/aws-dev.yaml` |
-| `openstack` | `./scripts/infra/up.sh openstack` | `./scripts/infra/kubeadm/up.sh -i .kube/os-inventory.env` | `.kube/os-dev.yaml` |
+| `kind` | `./scripts/infra/up.sh kind` | Cluster is ready | `clusters/kind/kubeconfig` |
+| `ec2` | `./scripts/infra/up.sh aws default` | `./scripts/infra/kubeadm/up.sh default` | `clusters/<cluster_name>/kubeconfig` |
+| `openstack` | `./scripts/infra/up.sh openstack default` | `./scripts/infra/kubeadm/up.sh default` | `clusters/<cluster_name>/kubeconfig` |
 
 Day 1 / Day 2 currently use profile **`dev`**: `./bootstrap/bootstrap.sh dev`, `./scripts/gitops/start.sh dev`, `gitops/clusters/dev/`. That is the GitOps cluster name, not a second Kind cluster.
 
@@ -50,8 +50,8 @@ Bootstrap pins: `bootstrap/env/defaults.env` + gitignored `bootstrap.env` (loade
 
 ```bash
 # 1. Day 0 — one environment
-./scripts/infra/up.sh kind          # or aws | openstack (+ kubeadm on VMs)
-source scripts/lib/kubeconfig-setup.sh .kube/<kubeconfig>.yaml
+./scripts/infra/up.sh kind          # or aws|openstack <cluster> (+ kubeadm)
+source scripts/lib/kubeconfig-setup.sh clusters/<env>/kubeconfig
 
 # 2. Day 1 — same on every cluster
 ./bootstrap/bootstrap.sh dev
@@ -69,8 +69,8 @@ Teardown Day 0 only (`gitops/` and `bootstrap/` stay in Git):
 
 ```bash
 ./scripts/infra/down.sh kind
-./scripts/infra/down.sh aws -y
-./scripts/infra/down.sh openstack -y   # does not delete the existing tenant network
+./scripts/infra/down.sh aws default -y
+./scripts/infra/down.sh openstack default -y   # does not delete the existing tenant network
 ```
 
 OpenStack Terraform **looks up** `network_name`; destroy does **not** delete that network.

@@ -1,0 +1,36 @@
+# Gitignored copy:
+#   cp config/openstack/clusters/default.yaml.example config/openstack/clusters/default.yaml
+#
+# One file = one cluster. Copy again for a second cluster (lab.yaml, …).
+# Build always targets exactly one file:
+#   ./scripts/infra/up.sh openstack default
+#   ./scripts/infra/up.sh openstack lab
+#
+# Auth stays in config/openstack/clouds.yaml.
+#
+# Fill image_name, node_flavor, network_name from Horizon or:
+#   export OS_CLIENT_CONFIG_FILE=$PWD/config/openstack/clouds.yaml OS_CLOUD=lab
+#   openstack image list
+#   openstack flavor list
+#   openstack network list
+
+cluster_name: k8s-os
+control_plane_prefix: cp
+worker_prefix: wk
+# Must match a key under clouds: in clouds.yaml
+cloud: lab
+
+terraform:
+  worker_nodes: 1
+  ssh_user: ubuntu
+  admin_cidr: 0.0.0.0/0
+  root_volume_gb: 20
+  availability_zone: ""
+  image_name: REPLACE_ME
+  node_flavor: REPLACE_ME
+  # Existing Neutron network; Terraform does not create a new one.
+  network_name: tenant-internal-direct-net
+
+kubeadm:
+  kubernetes_version: "1.32"
+  pod_cidr: 192.168.0.0/16

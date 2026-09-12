@@ -7,14 +7,14 @@ Learning notes: [docs/infra/aws.md](../../../../docs/infra/aws.md) → [aws-kube
 **Apply (every Terraform step):** from `k8s-platform/`
 
 ```bash
-./scripts/infra/up.sh aws
-# or: ./scripts/infra/aws/up.sh
-# after VMs exist: ./scripts/infra/kubeadm/up.sh   # reads .kube/aws-inventory.env
+./scripts/infra/up.sh aws default
+# or: ./scripts/infra/aws/up.sh default
+# after VMs exist: ./scripts/infra/kubeadm/up.sh default
 ```
 
-**Config:** `.aws/credentials` (keys) and `.aws/config` (region, `cluster_name`, `vpc_cidr`, …).  
+**Config:** `config/aws/credentials` (keys), `config/aws/cli.conf` (region), `config/aws/clusters/<id>.yaml` (cluster knobs).  
 **Code:** [`main.tf`](./main.tf) in this directory.  
-**Tear down:** `./scripts/infra/aws/down.sh -y`
+**Tear down:** `./scripts/infra/aws/down.sh default -y`
 
 ---
 
@@ -42,8 +42,9 @@ Update the **Status** column when you finish a step. Summaries below stay as the
 
 **Created:** Local files only.
 
-- `.aws/credentials` — access key + secret (gitignored)
-- `.aws/config` — `region`, later cluster settings (gitignored)
+- `config/aws/credentials` — access key + secret (gitignored)
+- `config/aws/cli.conf` — `region` (gitignored)
+- `config/aws/clusters/default.yaml` — cluster knobs (`cluster_name`, `vpc_cidr`, …) (gitignored)
 
 **Check:** `./scripts/infra/aws/up.sh` prints `aws sts get-caller-identity` (account id + IAM ARN).
 
@@ -51,7 +52,7 @@ Update the **Status** column when you finish a step. Summaries below stay as the
 
 ## Step 1 — Terraform can talk to AWS
 
-**Learn:** `data` = ask AWS a question. `resource` = create something you pay to keep. Provider reads `.aws/` (not `~/.aws`).
+**Learn:** `data` = ask AWS a question. `resource` = create something you pay to keep. Provider reads `config/aws/` (not `~/.aws`).
 
 **Created:** No AWS objects. Two data sources in [`main.tf`](./main.tf):
 
@@ -127,7 +128,7 @@ Console: **VPC → Subnets → k8s-aws-public**, **Internet gateways → k8s-aws
 
 **Learn:** A **security group** is a stateful firewall on the instance network interface (ENI). Default inbound is **deny**. Egress we allow all so the VM can `apt` and pull images. It is **not** attached to anything until Step 5 (EC2 references this SG).
 
-`admin_cidr` comes from `.aws/config`. Lab value `0.0.0.0/0` means any internet host can try SSH and `:6443` — fine for learning, tighten to `YOUR.IP/32` later.
+`admin_cidr` comes from `config/aws/clusters/default.yaml`. Lab value `0.0.0.0/0` means any internet host can try SSH and `:6443` — fine for learning, tighten to `YOUR.IP/32` later.
 
 **Created:**
 
@@ -167,7 +168,7 @@ Console: **VPC → Security groups → k8s-aws-sg**.
 | AMI lookup | Ubuntu 22.04 amd64 (Canonical) | Disk image |
 | TLS key (ED25519) | private file gitignored | SSH identity |
 | Key pair | `k8s-aws-ssh` in AWS | Public half of that key |
-| Local PEM | `.aws/k8s-aws-ssh.pem` mode `0600` | What you pass to `ssh -i` |
+| Local PEM | `clusters/aws/ssh.pem` mode `0600` | What you pass to `ssh -i` |
 | EC2 | `k8s-aws-control-plane`, `t3.medium` | The VM, in the public subnet, SG attached, public IP |
 
 **Not created yet:** worker VM, kubeadm, kubeconfig.
@@ -176,7 +177,7 @@ Console: **VPC → Security groups → k8s-aws-sg**.
 
 ### SSH to the node
 
-User is **`ubuntu`** (Ubuntu AMI). The private key is **`.aws/k8s-aws-ssh.pem`** (gitignored). Do not commit it or paste it into chat.
+User is **`ubuntu`** (Ubuntu AMI). The private key is **`clusters/aws/ssh.pem`** (gitignored). Do not commit it or paste it into chat.
 
 From `k8s-platform/`:
 
@@ -185,7 +186,7 @@ From `k8s-platform/`:
 terraform -chdir=infra/terraform/environments/ec2 output
 
 # 2. Copy the ssh_control_plane value and run it, or:
-ssh -i .aws/k8s-aws-ssh.pem ubuntu@$(terraform -chdir=infra/terraform/environments/ec2 output -raw control_plane_public_ip)
+ssh -i clusters/aws/ssh.pem ubuntu@$(terraform -chdir=infra/terraform/environments/ec2 output -raw control_plane_public_ip)
 ```
 
 First connect: type `yes` when asked to trust the host key. You should get an Ubuntu prompt (`ubuntu@ip-10-0-1-…`).
@@ -198,9 +199,9 @@ exit
 
 | Symptom | What to check |
 |---------|----------------|
-| `Permission denied (publickey)` | `chmod 600 .aws/k8s-aws-ssh.pem`; user is `ubuntu` not `ec2-user` or `root` |
+| `Permission denied (publickey)` | `chmod 600 clusters/aws/ssh.pem`; user is `ubuntu` not `ec2-user` or `root` |
 | `Connection timed out` | Instance **Running**; security group TCP 22; use the **public** IP from `terraform output` |
-| `UNPROTECTED PRIVATE KEY FILE` | `chmod 600 .aws/k8s-aws-ssh.pem` |
+| `UNPROTECTED PRIVATE KEY FILE` | `chmod 600 clusters/aws/ssh.pem` |
 
 AWS console: **EC2 → Instances → k8s-aws-control-plane → Connect** is optional; this lab uses the PEM above, not EC2 Instance Connect.
 
@@ -210,7 +211,7 @@ AWS console: **EC2 → Instances → k8s-aws-control-plane → Connect** is opti
 
 **Learn:** This VM *will* run pods after `kubeadm join`. Right now it is a second Ubuntu box on the **same** subnet, security group, AMI, instance type, and SSH key as the control plane. They can already reach each other because of the SG `self` rule. Kubernetes is still not installed.
 
-**Cost:** another `t3.medium` + disk + public IPv4 per worker. Default `worker_nodes = 1` in `.aws/config`. Extra VMs are `k8s-aws-worker-2`, … (`aws_instance.extra_workers`); the first worker stays `aws_instance.worker` so existing state is not replaced.
+**Cost:** another `t3.medium` + disk + public IPv4 per worker. Default `worker_nodes = 1` in `config/aws/clusters/default.yaml`. Extra VMs are `k8s-aws-worker-2`, … (`aws_instance.extra_workers`); the first worker stays `aws_instance.worker` so existing state is not replaced.
 
 **Created:**
 
@@ -230,7 +231,7 @@ Same user and key as the control plane:
 ```bash
 terraform -chdir=infra/terraform/environments/ec2 output ssh_worker
 
-ssh -i .aws/k8s-aws-ssh.pem ubuntu@$(terraform -chdir=infra/terraform/environments/ec2 output -raw worker_public_ip)
+ssh -i clusters/aws/ssh.pem ubuntu@$(terraform -chdir=infra/terraform/environments/ec2 output -raw worker_public_ip)
 ```
 
 From the control plane you can also ping the worker’s **private** IP (`terraform output worker_private_ip`, typically `10.0.1.x`).
@@ -252,9 +253,9 @@ terraform -chdir=infra/terraform/environments/ec2 output
 
 ## Step 8 — kubeadm
 
-**Learn:** Terraform stopped at Ubuntu VMs. Kubernetes is a **separate** step: `kubeadm/up.sh` reads `.kube/aws-inventory.env` (written by `aws/up.sh`), not Terraform. Same minor version on every node (`kubernetes_version` / `K8S_VERSION`). Pod CIDR is `192.168.0.0/16` so it does **not** overlap the VPC `10.0.0.0/16`. `WORKER_HOSTS` is a space-separated list (one or more workers).
+**Learn:** Terraform stopped at Ubuntu VMs. Kubernetes is a **separate** step: `kubeadm/up.sh` reads `clusters/aws/cluster.env` (written by `aws/up.sh`), not Terraform. Same minor version on every node (`kubernetes_version` / `K8S_VERSION`). Pod CIDR is `192.168.0.0/16` so it does **not** overlap the VPC `10.0.0.0/16`. `WORKER_HOSTS` is a space-separated list (one or more workers).
 
-**Created (after you finish):** kubeadm cluster; Calico CNI; `.kube/aws-dev.yaml` on the laptop.
+**Created (after you finish):** kubeadm cluster; Calico CNI; `clusters/aws/kubeconfig` on the laptop.
 
 No new AWS bill beyond the VMs.
 
@@ -262,13 +263,13 @@ From `k8s-platform/` (takes ~10–15 minutes; VMs must be Running; inventory mus
 
 ```bash
 ./scripts/infra/kubeadm/up.sh
-source scripts/lib/kubeconfig-setup.sh .kube/aws-dev.yaml
+source scripts/lib/kubeconfig-setup.sh clusters/aws/kubeconfig
 kubectl get nodes -o wide
 ```
 
 The script SSHs using the inventory (`SSH_USER`, `SSH_KEY`, hosts) and streams [`scripts/infra/kubeadm/remote/`](../../../../scripts/infra/kubeadm/remote/) over SSH stdin (nothing is copied onto the VMs). It is safe to re-run (skips init/join if already done). Manual copy-paste is below if you want to watch each command.
 
-Inventory (gitignored; `aws/up.sh` writes it): `.kube/aws-inventory.env`. Template: [`scripts/infra/kubeadm/inventory.example`](../../../../scripts/infra/kubeadm/inventory.example). Extra workers: set `worker_nodes` in `.aws/config` and re-apply Terraform, then run `kubeadm/up.sh` again.
+Inventory (gitignored; `aws/up.sh` writes it): `clusters/aws/cluster.env`. Template: [`scripts/infra/kubeadm/inventory.example`](../../../../scripts/infra/kubeadm/inventory.example). Extra workers: set `worker_nodes` in `config/aws/clusters/default.yaml` and re-apply Terraform, then run `kubeadm/up.sh` again.
 
 On the laptop, note the IPs (used as `--control-plane-endpoint` so kubectl from the Mac hits `:6443`):
 
@@ -371,16 +372,16 @@ kubectl get nodes -o wide
 From `k8s-platform/` on the Mac (not inside SSH):
 
 ```bash
-mkdir -p .kube
-ssh -i .aws/k8s-aws-ssh.pem ubuntu@$(terraform -chdir=infra/terraform/environments/ec2 output -raw control_plane_public_ip) \
-  'sudo cat /etc/kubernetes/admin.conf' > .kube/aws-dev.yaml
-chmod 600 .kube/aws-dev.yaml
+mkdir -p clusters/aws
+ssh -i clusters/aws/ssh.pem ubuntu@$(terraform -chdir=infra/terraform/environments/ec2 output -raw control_plane_public_ip) \
+  'sudo cat /etc/kubernetes/admin.conf' > clusters/aws/kubeconfig
+chmod 600 clusters/aws/kubeconfig
 
-source scripts/lib/kubeconfig-setup.sh .kube/aws-dev.yaml
+source scripts/lib/kubeconfig-setup.sh clusters/aws/kubeconfig
 kubectl get nodes -o wide
 ```
 
-`.kube/` is gitignored. `admin.conf` already has `https://<public-ip>:6443` because of `--control-plane-endpoint`.
+`clusters/` outputs are gitignored. `admin.conf` already has `https://<public-ip>:6443` because of `--control-plane-endpoint`.
 
 ### Reset (before `aws/down.sh`)
 

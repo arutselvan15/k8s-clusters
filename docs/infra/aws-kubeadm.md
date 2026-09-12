@@ -1,12 +1,12 @@
 # Day 0 — AWS kubeadm
 
-**Prerequisites:** [aws.md](./aws.md) lessons **AWS-0** through **AWS-7** (SSH to control plane works). Inventory exists at `.kube/aws-inventory.env` after `./scripts/infra/up.sh aws`.
+**Prerequisites:** [aws.md](./aws.md) lessons **AWS-0** through **AWS-7** (SSH to control plane works). Inventory exists at `clusters/<cluster_name>/cluster.env` after `./scripts/infra/up.sh aws default`.
 
 ## Automated (same as the remote scripts)
 
 ```bash
-./scripts/infra/kubeadm/up.sh
-source scripts/lib/kubeconfig-setup.sh .kube/aws-dev.yaml
+./scripts/infra/kubeadm/up.sh default
+source scripts/lib/kubeconfig-setup.sh clusters/k8s-aws/kubeconfig
 kubectl get nodes -o wide
 ```
 
@@ -16,7 +16,7 @@ Pod CIDR is `192.168.0.0/16` so it does **not** overlap the VPC `10.0.0.0/16`.
 
 Manual steps below are the CKA-style walkthrough (same commands as the remote scripts).
 
-Pin one Kubernetes minor version on **every** node (`kubernetes_version` in `.aws/config`, default **1.32** — check [pkgs.k8s.io](https://pkgs.k8s.io) for current patch).
+Pin one Kubernetes minor version on **every** node (`kubernetes_version` in `config/aws/clusters/default.yaml`, default **1.32** — check [pkgs.k8s.io](https://pkgs.k8s.io) for current patch).
 
 Use **`terraform output control_plane_public_ip`** for the API endpoint.
 
@@ -118,10 +118,10 @@ kubectl get nodes
 From repo root on your Mac:
 
 ```bash
-ssh -i .aws/k8s-aws-ssh.pem ubuntu@$(terraform -chdir=infra/terraform/environments/ec2 output -raw control_plane_public_ip) \
-  'sudo cat /etc/kubernetes/admin.conf' > .kube/aws-dev.yaml
-chmod 600 .kube/aws-dev.yaml
-source scripts/lib/kubeconfig-setup.sh .kube/aws-dev.yaml
+ssh -i clusters/aws/ssh.pem ubuntu@$(terraform -chdir=infra/terraform/environments/ec2 output -raw control_plane_public_ip) \
+  'sudo cat /etc/kubernetes/admin.conf' > clusters/aws/kubeconfig
+chmod 600 clusters/aws/kubeconfig
+source scripts/lib/kubeconfig-setup.sh clusters/aws/kubeconfig
 kubectl get nodes -o wide
 ```
 

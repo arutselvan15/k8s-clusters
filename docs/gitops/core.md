@@ -17,7 +17,7 @@ Argo uses the remote URL registered in Day 1.
 ## The seed (only manual Day 2 kubectl)
 
 ```bash
-source scripts/lib/kubeconfig-setup.sh .kube/<kubeconfig>.yaml
+source scripts/lib/kubeconfig-setup.sh clusters/<env>/kubeconfig
 ./scripts/gitops/start.sh dev
 ```
 

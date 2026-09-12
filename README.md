@@ -31,7 +31,7 @@ Optional: copy [`bootstrap/env/bootstrap.env.example`](bootstrap/env/bootstrap.e
 
 git push origin main
 
-source scripts/lib/kubeconfig-setup.sh .kube/kind-dev.yaml
+source scripts/lib/kubeconfig-setup.sh clusters/kind/kubeconfig
 ./scripts/gitops/start.sh dev
 ```
 
@@ -44,17 +44,18 @@ Day 0 only: `./scripts/infra/up.sh kind`
 ## Day 0 — AWS or OpenStack (VMs, then kubeadm)
 
 ```bash
-cp .aws/credentials.example .aws/credentials && chmod 600 .aws/credentials
-cp .aws/config.example .aws/config
-./scripts/infra/up.sh aws
-./scripts/infra/kubeadm/up.sh
-source scripts/lib/kubeconfig-setup.sh .kube/aws-dev.yaml
+cp config/aws/credentials.example config/aws/credentials && chmod 600 config/aws/credentials
+cp config/aws/cli.conf.example config/aws/cli.conf
+cp config/aws/clusters/default.yaml.example config/aws/clusters/default.yaml
+./scripts/infra/up.sh aws default
+./scripts/infra/kubeadm/up.sh default
+source scripts/lib/kubeconfig-setup.sh clusters/k8s-aws/kubeconfig
 
-cp .openstack/clouds.yaml.example .openstack/clouds.yaml && chmod 600 .openstack/clouds.yaml
-cp .openstack/config.example .openstack/config
-./scripts/infra/up.sh openstack
-./scripts/infra/kubeadm/up.sh -i .kube/os-inventory.env
-source scripts/lib/kubeconfig-setup.sh .kube/os-dev.yaml
+cp config/openstack/clouds.yaml.example config/openstack/clouds.yaml && chmod 600 config/openstack/clouds.yaml
+cp config/openstack/clusters/default.yaml.example config/openstack/clusters/default.yaml
+./scripts/infra/up.sh openstack default
+./scripts/infra/kubeadm/up.sh default
+source scripts/lib/kubeconfig-setup.sh clusters/k8s-os/kubeconfig
 ```
 
 Checklists: [ec2/STEPS.md](infra/terraform/environments/ec2/STEPS.md), [openstack/STEPS.md](infra/terraform/environments/openstack/STEPS.md).
@@ -65,8 +66,8 @@ Checklists: [ec2/STEPS.md](infra/terraform/environments/ec2/STEPS.md), [openstac
 
 ```bash
 ./scripts/infra/down.sh kind
-./scripts/infra/down.sh aws -y
-./scripts/infra/down.sh openstack -y   # does not delete the existing tenant network
+./scripts/infra/down.sh aws default -y
+./scripts/infra/down.sh openstack default -y   # does not delete the existing tenant network
 ```
 
 ---

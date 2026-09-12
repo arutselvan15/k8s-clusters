@@ -52,7 +52,7 @@ Platform apps belong in **`gitops/`**, not in bootstrap scripts.
 ## Verify Day 1
 
 ```bash
-source scripts/lib/kubeconfig-setup.sh .kube/<kubeconfig>.yaml
+source scripts/lib/kubeconfig-setup.sh clusters/<env>/kubeconfig
 kubectl get pods -n argocd
 ```
 

@@ -7,14 +7,14 @@ This is one Day 0 environment. It is not a separate platform.
 Prefer the dispatcher over raw `terraform` once credentials exist:
 
 ```bash
-./scripts/infra/up.sh aws
-./scripts/infra/kubeadm/up.sh
-source scripts/lib/kubeconfig-setup.sh .kube/aws-dev.yaml
+./scripts/infra/up.sh aws default
+./scripts/infra/kubeadm/up.sh default
+source scripts/lib/kubeconfig-setup.sh clusters/k8s-aws/kubeconfig
 ```
 
 - Checklist (why each object exists): [infra/terraform/environments/ec2/STEPS.md](../../infra/terraform/environments/ec2/STEPS.md)
 - Root module: [environments/ec2/main.tf](../../infra/terraform/environments/ec2/main.tf)
-- Lab settings: `.aws/config` (from [config.example](../../.aws/config.example)), keys in `.aws/credentials`
+- Lab settings: [default.yaml.example](../../config/aws/clusters/default.yaml.example); AWS region: [cli.conf](../../config/aws/cli.conf.example); keys: `config/aws/credentials`
 
 Working directory if you run Terraform by hand:
 
@@ -40,7 +40,7 @@ infra/terraform/environments/ec2/
 | Common Day 1–2 ([bootstrap](../bootstrap/) · [gitops](../gitops/)) | ☐ |
 | [AWS-15](#lesson-aws-15) Teardown | ☐ |
 
-The current `main.tf` applies **all** of AWS-1–7 in one `./scripts/infra/up.sh aws`. Read STEPS.md as you go so you still learn each object. Incremental `-target` is optional.
+The current `main.tf` applies **all** of AWS-1–7 in one `./scripts/infra/up.sh aws default`. Read STEPS.md as you go so you still learn each object. Incremental `-target` is optional.
 
 ---
 
@@ -57,12 +57,13 @@ The current `main.tf` applies **all** of AWS-1–7 in one `./scripts/infra/up.sh
 5. Copy project credentials (gitignored):
 
    ```bash
-   cp .aws/credentials.example .aws/credentials
-   cp .aws/config.example .aws/config
-   chmod 600 .aws/credentials
+   cp config/aws/credentials.example config/aws/credentials
+   cp config/aws/cli.conf.example config/aws/cli.conf
+   cp config/aws/clusters/default.yaml.example config/aws/clusters/default.yaml
+   chmod 600 config/aws/credentials
    ```
 
-   Fill keys in `.aws/credentials`. Set `admin_cidr` in `.aws/config` to `YOUR.PUBLIC.IP/32` when you leave the wide-open lab default.
+   Fill keys in `config/aws/credentials`. Set `admin_cidr` in `config/aws/clusters/default.yaml` to `YOUR.PUBLIC.IP/32` when you leave the wide-open lab default.
 
 6. Install Terraform: `brew tap hashicorp/tap && brew install hashicorp/tap/terraform`
 
@@ -95,7 +96,7 @@ Read:
 - [versions.tf](../../infra/terraform/environments/ec2/versions.tf)
 - [variables.tf](../../infra/terraform/environments/ec2/variables.tf)
 
-Provider reads `k8s-platform/.aws/` (not `~/.aws`).
+Provider reads `k8s-platform/config/aws/` (not `~/.aws`).
 
 **Checkpoint:** `terraform output account_id` / `caller_arn` after the first apply.
 
@@ -105,7 +106,7 @@ Provider reads `k8s-platform/.aws/` (not `~/.aws`).
 
 ## Lesson AWS-2 — VPC
 
-**Learn:** A **VPC** is your private network in AWS (CIDR block). Default lab CIDR is `10.0.0.0/16` (`vpc_cidr` in `.aws/config`).
+**Learn:** A **VPC** is your private network in AWS (CIDR block). Default lab CIDR is `10.0.0.0/16` (`vpc_cidr` in `config/aws/clusters/default.yaml`).
 
 **File:** [main.tf](../../infra/terraform/environments/ec2/main.tf) (`aws_vpc.lab`).
 
@@ -149,7 +150,7 @@ Tighten `admin_cidr` to your IP `/32` before anything other than a throwaway lab
 terraform -chdir=infra/terraform/environments/ec2 output ssh_control_plane
 ```
 
-PEM: `.aws/k8s-aws-ssh.pem` (gitignored). User: `ubuntu`.
+PEM: `clusters/aws/ssh.pem` (gitignored). User: `ubuntu`.
 
 **Cost:** ~t3.medium + disk + public IPv4 while running.
 
@@ -161,7 +162,7 @@ PEM: `.aws/k8s-aws-ssh.pem` (gitignored). User: `ubuntu`.
 
 ## Lesson AWS-6 — Worker EC2
 
-`worker_nodes` in `.aws/config` (default 1). Extra VMs are `k8s-aws-worker-2`, … First worker stays `aws_instance.worker` so state is not replaced.
+`worker_nodes` in `config/aws/clusters/default.yaml` (default 1). Extra VMs are `k8s-aws-worker-2`, … First worker stays `aws_instance.worker` so state is not replaced.
 
 **Checkpoint:** Both instances in the same subnet; SG `self` allows CP ↔ worker.
 
@@ -175,7 +176,7 @@ PEM: `.aws/k8s-aws-ssh.pem` (gitignored). User: `ubuntu`.
 terraform -chdir=infra/terraform/environments/ec2 output
 ```
 
-`aws/up.sh` writes `.kube/aws-inventory.env` (gitignored) for kubeadm.
+`aws/up.sh` writes `clusters/aws/cluster.env` (gitignored) for kubeadm.
 
 **Next:** [aws-kubeadm.md](./aws-kubeadm.md) — automated `./scripts/infra/kubeadm/up.sh` or manual K-1–K-4. Then [bootstrap](../bootstrap/) and [gitops](../gitops/).
 
@@ -201,4 +202,4 @@ Then:
 
 ## If your IP changes
 
-Update `admin_cidr` in `.aws/config` and re-run `./scripts/infra/up.sh aws` so SSH and `kubectl` to `:6443` work again.
+Update `admin_cidr` in `config/aws/clusters/default.yaml` and re-run `./scripts/infra/up.sh aws default` so SSH and `kubectl` to `:6443` work again.

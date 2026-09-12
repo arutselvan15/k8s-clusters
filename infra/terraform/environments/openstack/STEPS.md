@@ -7,14 +7,14 @@ Learning notes: [docs/infra/openstack.md](../../../../docs/infra/openstack.md). 
 **Apply:** from `k8s-platform/`
 
 ```bash
-./scripts/infra/up.sh openstack
-# or: ./scripts/infra/openstack/up.sh
-./scripts/infra/kubeadm/up.sh -i .kube/os-inventory.env
+./scripts/infra/up.sh openstack default
+# or: ./scripts/infra/openstack/up.sh default
+./scripts/infra/kubeadm/up.sh default
 ```
 
-**Config:** `.openstack/clouds.yaml` (Keystone auth, gitignored) and `.openstack/config` (image, flavor, existing `network_name`).  
+**Config:** `config/openstack/clouds.yaml` (Keystone auth, gitignored) and `config/openstack/clusters/<id>.yaml` (image, flavor, existing `network_name`).  
 **Code:** [`main.tf`](./main.tf).  
-**Tear down:** `./scripts/infra/openstack/down.sh -y`
+**Tear down:** `./scripts/infra/openstack/down.sh default -y`
 
 This cloud is **not** like AWS VPC: the project already has `tenant-internal-direct-net`. Terraform **looks up** that network and puts VMs on it. It does **not** create a network, subnet, router, or floating IP (those quotas are already used).
 
@@ -34,7 +34,7 @@ AWS name → OpenStack name: existing tenant net (not a new VPC), security group
 | [5](#step-5--control-plane-vm) | Ubuntu VM on existing net + SSH | in main.tf |
 | [6](#step-6--worker-vms) | `worker_nodes` Ubuntu VMs | in main.tf |
 | [7](#step-7--ssh-and-outputs) | PEM, fixed IPs, inventory | in main.tf |
-| [8](#step-8--kubeadm) | Same kubeadm scripts as AWS | `./scripts/infra/kubeadm/up.sh -i .kube/os-inventory.env` |
+| [8](#step-8--kubeadm) | Same kubeadm scripts as AWS | `./scripts/infra/kubeadm/up.sh -i clusters/openstack/cluster.env` |
 
 ---
 
@@ -45,9 +45,9 @@ AWS name → OpenStack name: existing tenant net (not a new VPC), security group
 **Created:** Local files only.
 
 ```bash
-cp .openstack/clouds.yaml.example .openstack/clouds.yaml
-cp .openstack/config.example .openstack/config
-chmod 600 .openstack/clouds.yaml
+cp config/openstack/clouds.yaml.example config/openstack/clouds.yaml
+cp config/openstack/clusters/default.yaml.example config/openstack/clusters/default.yaml
+chmod 600 config/openstack/clouds.yaml
 ```
 
 Edit `clouds.yaml`: `auth_url`, username/password **or** application credentials, `project_name`, `region_name`.  
@@ -56,7 +56,7 @@ Edit `config`: `image_name`, `node_flavor`, `network_name` (existing Neutron net
 If the OpenStack CLI is installed:
 
 ```bash
-export OS_CLIENT_CONFIG_FILE=$PWD/.openstack/clouds.yaml OS_CLOUD=lab
+export OS_CLIENT_CONFIG_FILE=$PWD/config/openstack/clouds.yaml OS_CLOUD=lab
 openstack image list
 openstack flavor list
 openstack network list
@@ -70,7 +70,7 @@ Pick an Ubuntu image, a flavor with ~2–4 vCPU / 8 GiB RAM, and the **existing*
 
 ## Step 1 — Terraform can talk to OpenStack
 
-**Learn:** Provider reads `OS_CLIENT_CONFIG_FILE` + `cloud =` (from `.openstack/config`). `data` asks Keystone/Glance/Neutron; `resource` creates objects you pay for (VMs, floating IPs).
+**Learn:** Provider reads `OS_CLIENT_CONFIG_FILE` + `cloud:` (from `config/openstack/clusters/default.yaml`). `data` asks Keystone/Glance/Neutron; `resource` creates objects you pay for (VMs, floating IPs).
 
 **Created:** No extra quota yet. Data sources: auth scope, image, flavor, existing network.
 
@@ -82,7 +82,7 @@ Pick an Ubuntu image, a flavor with ~2–4 vCPU / 8 GiB RAM, and the **existing*
 
 ## Step 2 — Network
 
-**Learn:** On cloud-rtp-1 the project already has a tenant network. Terraform **does not** create another (quota is typically 1). `network_name` in `.openstack/config` is looked up as `data.openstack_networking_network_v2`.
+**Learn:** On cloud-rtp-1 the project already has a tenant network. Terraform **does not** create another (quota is typically 1). `network_name` in `config/openstack/clusters/default.yaml` is looked up as `data.openstack_networking_network_v2`.
 
 **Created:** nothing. Uses `tenant-internal-direct-net`.
 
@@ -111,17 +111,17 @@ Same intent as AWS:
 
 **Learn:** Nova instance, boot **volume**. The port sits on `tenant-internal-direct-net`. The address your laptop SSHs to is that **fixed IP** (no floating IP). You need to be on a network that can reach that tenant net (typical on Cisco campus/VPN).
 
-User is **`ssh_user`** from config (`ubuntu` for Ubuntu images). Key: **`.openstack/k8s-os-ssh.pem`**.
+User is **`ssh_user`** from config (`ubuntu` for Ubuntu images). Key: **`clusters/openstack/ssh.pem`**.
 
 ```bash
-ssh -i .openstack/k8s-os-ssh.pem ubuntu@$(terraform -chdir=infra/terraform/environments/openstack output -raw control_plane_public_ip)
+ssh -i clusters/openstack/ssh.pem ubuntu@$(terraform -chdir=infra/terraform/environments/openstack output -raw control_plane_public_ip)
 ```
 
 ---
 
 ## Step 6 — Worker VMs
 
-`worker_nodes` in `.openstack/config` (default 1). Each worker gets a port and instance on the same existing network. Names: `<cluster_name>-worker-1`, …
+`worker_nodes` in `config/openstack/clusters/default.yaml` (default 1). Each worker gets a port and instance on the same existing network. Names: `<cluster_name>-worker-1`, …
 
 ---
 
@@ -131,7 +131,7 @@ ssh -i .openstack/k8s-os-ssh.pem ubuntu@$(terraform -chdir=infra/terraform/envir
 terraform -chdir=infra/terraform/environments/openstack output
 ```
 
-`./scripts/infra/openstack/up.sh` writes **`.kube/os-inventory.env`** (gitignored) for kubeadm. No Terraform in the kubeadm scripts.
+`./scripts/infra/openstack/up.sh` writes **`clusters/openstack/cluster.env`** (gitignored) for kubeadm. No Terraform in the kubeadm scripts.
 
 ---
 
@@ -140,12 +140,12 @@ terraform -chdir=infra/terraform/environments/openstack output
 Same scripts as AWS. Point at the OpenStack inventory:
 
 ```bash
-./scripts/infra/kubeadm/up.sh -i .kube/os-inventory.env
-source scripts/lib/kubeconfig-setup.sh .kube/os-dev.yaml
+./scripts/infra/kubeadm/up.sh -i clusters/openstack/cluster.env
+source scripts/lib/kubeconfig-setup.sh clusters/openstack/kubeconfig
 kubectl get nodes -o wide
 ```
 
-Reset Kubernetes only: `./scripts/infra/kubeadm/reset.sh -i .kube/os-inventory.env`  
+Reset Kubernetes only: `./scripts/infra/kubeadm/reset.sh -i clusters/openstack/cluster.env`  
 Destroy VMs: `./scripts/infra/openstack/down.sh -y`
 
 ---

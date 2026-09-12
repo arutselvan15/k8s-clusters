@@ -65,19 +65,19 @@ resource "openstack_compute_keypair_v2" "lab" {
 
 resource "local_file" "ssh_private_key" {
   content         = tls_private_key.lab.private_key_openssh
-  filename        = abspath("${path.root}/../../../../.openstack/${var.cluster_name}-ssh.pem")
+  filename        = abspath(var.ssh_private_key_path)
   file_permission = "0600"
 }
 
 resource "openstack_networking_port_v2" "control_plane" {
-  name               = "${var.cluster_name}-control-plane"
+  name               = "${var.cluster_name}-${var.control_plane_prefix}"
   network_id         = data.openstack_networking_network_v2.lab.id
   admin_state_up     = true
   security_group_ids = [openstack_networking_secgroup_v2.lab.id]
 }
 
 resource "openstack_compute_instance_v2" "control_plane" {
-  name      = "${var.cluster_name}-control-plane"
+  name      = "${var.cluster_name}-${var.control_plane_prefix}"
   flavor_id = data.openstack_compute_flavor_v2.node.id
   key_pair  = openstack_compute_keypair_v2.lab.name
 
@@ -104,7 +104,7 @@ resource "openstack_compute_instance_v2" "control_plane" {
 # Step 6 — worker VMs on the same existing network.
 resource "openstack_networking_port_v2" "worker" {
   count              = var.worker_nodes
-  name               = "${var.cluster_name}-worker-${count.index + 1}"
+  name               = "${var.cluster_name}-${var.worker_prefix}-${count.index + 1}"
   network_id         = data.openstack_networking_network_v2.lab.id
   admin_state_up     = true
   security_group_ids = [openstack_networking_secgroup_v2.lab.id]
@@ -112,7 +112,7 @@ resource "openstack_networking_port_v2" "worker" {
 
 resource "openstack_compute_instance_v2" "worker" {
   count     = var.worker_nodes
-  name      = "${var.cluster_name}-worker-${count.index + 1}"
+  name      = "${var.cluster_name}-${var.worker_prefix}-${count.index + 1}"
   flavor_id = data.openstack_compute_flavor_v2.node.id
   key_pair  = openstack_compute_keypair_v2.lab.name
 

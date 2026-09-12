@@ -1,0 +1,9 @@
+# Gitignored copy: config/aws/cli.conf
+#   cp config/aws/cli.conf.example config/aws/cli.conf
+#
+# AWS CLI / Terraform provider only (region, output).
+# Cluster size, CIDRs, and kubeadm version belong in infra.yaml.
+
+[default]
+region = us-east-1
+output = json

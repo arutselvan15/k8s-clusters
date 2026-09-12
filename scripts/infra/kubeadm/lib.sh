@@ -10,7 +10,7 @@ k8s_plat_load_inventory() {
 
   if [[ ! -f "${file}" ]]; then
     echo "Inventory not found: ${file}" >&2
-    echo "Copy scripts/infra/kubeadm/inventory.example or run ./scripts/infra/aws/up.sh / ./scripts/infra/openstack/up.sh." >&2
+    echo "Run ./scripts/infra/up.sh aws|openstack <cluster> (writes clusters/<cluster_name>/cluster.env)." >&2
     return 1
   fi
 
@@ -22,7 +22,7 @@ k8s_plat_load_inventory() {
   K8S_VERSION="1.32"
   POD_CIDR="192.168.0.0/16"
   CALICO_MANIFEST="https://raw.githubusercontent.com/projectcalico/calico/v3.29.3/manifests/calico.yaml"
-  KUBECONFIG_FILE="${REPO_ROOT}/.kube/aws-dev.yaml"
+  KUBECONFIG_FILE=""
 
   while IFS= read -r line || [[ -n "${line}" ]]; do
     case "${line}" in
@@ -36,9 +36,10 @@ k8s_plat_load_inventory() {
       SSH_USER | SSH_KEY | CONTROL_PLANE_HOST | CONTROL_PLANE_ENDPOINT | WORKER_HOSTS | K8S_VERSION | POD_CIDR | CALICO_MANIFEST | KUBECONFIG_FILE)
         printf -v "${key}" '%s' "${val}"
         ;;
+      CLUSTER_NAME | SSH_CONTROL_PLANE | SSH_WORKER | VPC_CIDR | NETWORK_NAME)
+        ;;
       *)
-        echo "Unknown inventory key: ${key}" >&2
-        return 1
+        echo "Ignoring unknown inventory key: ${key}" >&2
         ;;
     esac
   done <"${file}"
@@ -56,6 +57,10 @@ k8s_plat_load_inventory() {
 
   if [[ "${SSH_KEY}" != /* ]]; then
     SSH_KEY="${REPO_ROOT}/${SSH_KEY}"
+  fi
+  if [[ -z "${KUBECONFIG_FILE}" ]]; then
+    echo "Set KUBECONFIG_FILE in ${file}" >&2
+    return 1
   fi
   if [[ "${KUBECONFIG_FILE}" != /* ]]; then
     KUBECONFIG_FILE="${REPO_ROOT}/${KUBECONFIG_FILE}"
@@ -77,8 +82,8 @@ k8s_plat_load_inventory() {
     WORKER_HOST_LIST+=("${host}")
   done
 
-  SSH_KNOWN_HOSTS="${REPO_ROOT}/.kube/ssh_known_hosts"
-  mkdir -p "${REPO_ROOT}/.kube"
+  SSH_KNOWN_HOSTS="$(dirname "${SSH_KEY}")/known_hosts"
+  mkdir -p "$(dirname "${SSH_KEY}")" "$(dirname "${KUBECONFIG_FILE}")"
   touch "${SSH_KNOWN_HOSTS}"
   chmod 600 "${SSH_KNOWN_HOSTS}"
 

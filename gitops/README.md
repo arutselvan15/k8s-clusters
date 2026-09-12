@@ -110,7 +110,7 @@ git push
 ### 3. Start GitOps (Day 2)
 
 ```bash
-source scripts/lib/kubeconfig-setup.sh .kube/kind-dev.yaml
+source scripts/lib/kubeconfig-setup.sh clusters/kind/kubeconfig
 ./scripts/gitops/start.sh dev
 ```
 

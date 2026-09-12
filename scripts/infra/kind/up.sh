@@ -14,7 +14,7 @@ usage() {
 Usage: ./scripts/infra/kind/up.sh [-y]
 
 Create the local Kind cluster (terraform environments/kind).
-Writes kubeconfig to .kube/kind-dev.yaml.
+Writes kubeconfig to clusters/kind/kubeconfig.
 
 -y is accepted for consistency; Kind apply is auto-approved.
 

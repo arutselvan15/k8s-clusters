@@ -5,7 +5,6 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 AUTO_APPROVE="-auto-approve"
-KUBECONFIG_FILE="${REPO_ROOT}/.kube/kind-dev.yaml"
 
 # shellcheck source=scripts/infra/kind/lib.sh
 source "${REPO_ROOT}/scripts/infra/kind/lib.sh"
@@ -56,9 +55,9 @@ cd "$ENV_DIR"
 # shellcheck disable=SC2086
 terraform destroy -input=false $AUTO_APPROVE
 
-if [[ -f "$KUBECONFIG_FILE" ]]; then
-  rm -f "$KUBECONFIG_FILE"
-  echo "Removed $KUBECONFIG_FILE"
+if [[ -f "${K8S_PLAT_KIND_KUBECONFIG}" ]]; then
+  rm -f "${K8S_PLAT_KIND_KUBECONFIG}"
+  echo "Removed ${K8S_PLAT_KIND_KUBECONFIG}"
 fi
 
 echo "Kind cluster destroyed."

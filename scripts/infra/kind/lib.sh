@@ -3,6 +3,9 @@
 
 : "${REPO_ROOT:?REPO_ROOT must be set before sourcing scripts/infra/kind/lib.sh}"
 
+# shellcheck source=scripts/lib/paths.sh
+source "${REPO_ROOT}/scripts/lib/paths.sh"
+
 K8S_PLAT_KIND_ENV_DIR="${REPO_ROOT}/infra/terraform/environments/kind"
 
 k8s_plat_docker_ok() {

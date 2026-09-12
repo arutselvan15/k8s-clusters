@@ -1,58 +1,43 @@
 #!/usr/bin/env bash
 # Source from openstack/up.sh and openstack/down.sh.
-# Points Terraform at k8s-platform/.openstack/clouds.yaml. Requires REPO_ROOT.
+# Points Terraform at config/openstack/clouds.yaml. Requires REPO_ROOT.
 
 : "${REPO_ROOT:?REPO_ROOT must be set before sourcing os-env.sh}"
 
-export OS_CLIENT_CONFIG_FILE="${REPO_ROOT}/.openstack/clouds.yaml"
-export K8S_OS_CONFIG_FILE="${REPO_ROOT}/.openstack/config"
+# shellcheck source=scripts/lib/paths.sh
+source "${REPO_ROOT}/scripts/lib/paths.sh"
+# shellcheck source=scripts/lib/cluster-config.sh
+source "${REPO_ROOT}/scripts/lib/cluster-config.sh"
+
+export OS_CLIENT_CONFIG_FILE="${K8S_PLAT_OS_CLOUDS}"
+export K8S_OS_CONFIG_FILE="${K8S_PLAT_OS_INFRA_YAML}"
 export OS_CLOUD="${OS_CLOUD:-lab}"
 
 k8s_plat_os_config_get() {
-  local key="$1"
-  python3 - "$key" <<'PY'
-import configparser, os, sys
-
-key = sys.argv[1]
-path = os.environ["K8S_OS_CONFIG_FILE"]
-cfg = configparser.RawConfigParser()
-if not cfg.read(path):
-    sys.exit(1)
-
-section = "default" if cfg.has_section("default") else "DEFAULT"
-if not cfg.has_option(section, key):
-    sys.exit(1)
-value = cfg.get(section, key).strip().strip('"').strip("'")
-if not value:
-    sys.exit(1)
-print(value)
-PY
+  k8s_plat_yaml_get "${K8S_OS_CONFIG_FILE}" "$1"
 }
 
 k8s_plat_require_os_credentials() {
-  mkdir -p "${REPO_ROOT}/.openstack"
+  mkdir -p "${K8S_PLAT_CONFIG_DIR}/openstack" "${K8S_PLAT_CONFIG_DIR}/openstack/clusters"
 
   if [[ ! -f "${OS_CLIENT_CONFIG_FILE}" ]]; then
-    if [[ -f "${HOME}/.config/openstack/clouds.yaml" ]]; then
+    if [[ -f "${REPO_ROOT}/.openstack/clouds.yaml" ]]; then
+      cp "${REPO_ROOT}/.openstack/clouds.yaml" "${OS_CLIENT_CONFIG_FILE}"
+      chmod 600 "${OS_CLIENT_CONFIG_FILE}"
+      echo "==> Migrated .openstack/clouds.yaml -> ${OS_CLIENT_CONFIG_FILE}"
+    elif [[ -f "${HOME}/.config/openstack/clouds.yaml" ]]; then
       cp "${HOME}/.config/openstack/clouds.yaml" "${OS_CLIENT_CONFIG_FILE}"
       chmod 600 "${OS_CLIENT_CONFIG_FILE}"
       echo "==> Copied ~/.config/openstack/clouds.yaml -> ${OS_CLIENT_CONFIG_FILE} (gitignored)"
     else
       echo "Missing ${OS_CLIENT_CONFIG_FILE}" >&2
-      echo "Copy clouds.yaml.example and fill in Keystone auth (never commit it)." >&2
-      echo "  cp ${REPO_ROOT}/.openstack/clouds.yaml.example ${OS_CLIENT_CONFIG_FILE}" >&2
+      echo "  cp ${K8S_PLAT_CONFIG_DIR}/openstack/clouds.yaml.example ${OS_CLIENT_CONFIG_FILE}" >&2
       echo "  chmod 600 ${OS_CLIENT_CONFIG_FILE}" >&2
       return 1
     fi
   fi
   chmod 600 "${OS_CLIENT_CONFIG_FILE}"
 
-  if [[ ! -f "${K8S_OS_CONFIG_FILE}" ]]; then
-    cp "${REPO_ROOT}/.openstack/config.example" "${K8S_OS_CONFIG_FILE}"
-    echo "==> Wrote ${K8S_OS_CONFIG_FILE} from config.example"
-    echo "Edit image_name, node_flavor, and network_name for your cloud." >&2
-    return 1
-  fi
 }
 
 k8s_plat_load_os_provider_vars() {
@@ -92,12 +77,12 @@ k8s_plat_load_os_provider_vars() {
     missing=1
   fi
   if [[ "${missing}" -ne 0 ]]; then
-    echo "Copy ${REPO_ROOT}/.openstack/config.example and set cloud-specific names." >&2
+    echo "Copy ${K8S_PLAT_CONFIG_DIR}/openstack/clusters/default.yaml.example and set cloud-specific names." >&2
     return 1
   fi
 
   cloud="${OS_CLOUD}"
-  cluster_name="$(k8s_plat_os_config_get cluster_name 2>/dev/null || echo "k8s-os")"
+  cluster_name="${K8S_PLAT_CLUSTER_NAME:-$(k8s_plat_os_config_get cluster_name 2>/dev/null || echo "k8s-os")}"
   admin_cidr="$(k8s_plat_os_config_get admin_cidr 2>/dev/null || echo "0.0.0.0/0")"
   image_name="$(k8s_plat_os_config_get image_name)"
   node_flavor="$(k8s_plat_os_config_get node_flavor)"
@@ -109,11 +94,16 @@ k8s_plat_load_os_provider_vars() {
   echo "==> OpenStack from ${OS_CLIENT_CONFIG_FILE} cloud=${cloud}"
   echo "    cluster_name=${cluster_name} network_name=${network_name} admin_cidr=${admin_cidr}"
   echo "    image_name=${image_name} node_flavor=${node_flavor} worker_nodes=${worker_nodes}"
+  echo "    prefixes ${K8S_PLAT_CONTROL_PLANE_PREFIX:-cp} / ${K8S_PLAT_WORKER_PREFIX:-wk}"
   echo "    ssh_user=${ssh_user}"
+  echo "    cluster config=${K8S_OS_CONFIG_FILE}"
 
   K8S_TF_VAR_ARGS=(
     -var "cloud=${cloud}"
     -var "cluster_name=${cluster_name}"
+    -var "control_plane_prefix=${K8S_PLAT_CONTROL_PLANE_PREFIX:-cp}"
+    -var "worker_prefix=${K8S_PLAT_WORKER_PREFIX:-wk}"
+    -var "ssh_private_key_path=${K8S_PLAT_CLUSTER_SSH_KEY}"
     -var "admin_cidr=${admin_cidr}"
     -var "network_name=${network_name}"
     -var "image_name=${image_name}"
