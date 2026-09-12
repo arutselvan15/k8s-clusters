@@ -8,7 +8,7 @@ data "openstack_identity_auth_scope_v3" "current" {
 
 data "openstack_images_image_v2" "ubuntu" {
   name        = var.image_name
-  most_recent = true
+  most_recent = var.image_most_recent
 }
 
 data "openstack_compute_flavor_v2" "node" {
@@ -30,8 +30,8 @@ resource "openstack_networking_secgroup_rule_v2" "ssh" {
   direction         = "ingress"
   ethertype         = "IPv4"
   protocol          = "tcp"
-  port_range_min    = 22
-  port_range_max    = 22
+  port_range_min    = var.ssh_port
+  port_range_max    = var.ssh_port
   remote_ip_prefix  = var.admin_cidr
   security_group_id = openstack_networking_secgroup_v2.lab.id
 }
@@ -40,8 +40,8 @@ resource "openstack_networking_secgroup_rule_v2" "kube_api" {
   direction         = "ingress"
   ethertype         = "IPv4"
   protocol          = "tcp"
-  port_range_min    = 6443
-  port_range_max    = 6443
+  port_range_min    = var.kubernetes_api_port
+  port_range_max    = var.kubernetes_api_port
   remote_ip_prefix  = var.admin_cidr
   security_group_id = openstack_networking_secgroup_v2.lab.id
 }
@@ -55,7 +55,7 @@ resource "openstack_networking_secgroup_rule_v2" "self" {
 
 # Step 5 — SSH key + control-plane VM on the existing network.
 resource "tls_private_key" "lab" {
-  algorithm = "ED25519"
+  algorithm = var.ssh_key_algorithm
 }
 
 resource "openstack_compute_keypair_v2" "lab" {
@@ -89,7 +89,7 @@ resource "openstack_compute_instance_v2" "control_plane" {
     destination_type      = "volume"
     volume_size           = var.root_volume_gb
     boot_index            = 0
-    delete_on_termination = true
+    delete_on_termination = var.volume_delete_on_termination
   }
 
   network {
@@ -124,7 +124,7 @@ resource "openstack_compute_instance_v2" "worker" {
     destination_type      = "volume"
     volume_size           = var.root_volume_gb
     boot_index            = 0
-    delete_on_termination = true
+    delete_on_termination = var.volume_delete_on_termination
   }
 
   network {

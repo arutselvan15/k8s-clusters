@@ -18,11 +18,11 @@ usage() {
   cat <<EOF
 Usage: $(basename "$0") [kind|aws|openstack] [cluster] [-y]
 
-  kind         ./scripts/infra/kind/down.sh
+  kind         ./scripts/infra/kind/down.sh [cluster]   (default id: dev)
   aws          ./scripts/infra/aws/down.sh [cluster]
   openstack    ./scripts/infra/openstack/down.sh [cluster]
 
-  cluster     same config id used at up (required for aws/openstack)
+  cluster     same config id used at up (kind defaults to dev)
   -y, --yes   terraform destroy -auto-approve on aws/openstack
   -h, --help
 
@@ -60,8 +60,9 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ "${PLATFORM}" == "kind" ]]; then
+  CLUSTER="${CLUSTER:-dev}"
   # shellcheck disable=SC2086
-  "${REPO_ROOT}/scripts/infra/kind/down.sh" ${YES}
+  "${REPO_ROOT}/scripts/infra/kind/down.sh" ${YES} --cluster "${CLUSTER}"
   k8s_plat_s3_offer
   exit 0
 fi

@@ -21,10 +21,10 @@ resource "aws_vpc" "lab" {
 }
 
 # Step 3 — one public subnet + door to the internet.
-# cidrsubnet(10.0.0.0/16, 8, 1) => 10.0.1.0/24 (256 addresses in the first AZ).
+# cidrsubnet(vpc_cidr, subnet_newbits, subnet_netnum) — values from cluster YAML.
 resource "aws_subnet" "public" {
   vpc_id                  = aws_vpc.lab.id
-  cidr_block              = cidrsubnet(var.vpc_cidr, 8, 1)
+  cidr_block              = cidrsubnet(var.vpc_cidr, var.subnet_newbits, var.subnet_netnum)
   availability_zone       = data.aws_availability_zones.available.names[0]
   map_public_ip_on_launch = true
 
@@ -107,11 +107,11 @@ resource "aws_security_group" "lab" {
 # Step 5 — control-plane EC2 (cost starts). Until kubeadm, this is only Ubuntu.
 data "aws_ami" "ubuntu" {
   most_recent = true
-  owners      = ["099720109477"] # Canonical
+  owners      = [var.ami_owner]
 
   filter {
     name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
+    values = [var.ami_name]
   }
 
   filter {
@@ -144,8 +144,8 @@ resource "aws_instance" "control_plane" {
   associate_public_ip_address = true
 
   root_block_device {
-    volume_type = "gp3"
-    volume_size = 20
+    volume_type = var.root_volume_type
+    volume_size = var.root_volume_gb
   }
 
   tags = {
@@ -164,8 +164,8 @@ resource "aws_instance" "worker" {
   associate_public_ip_address = true
 
   root_block_device {
-    volume_type = "gp3"
-    volume_size = 20
+    volume_type = var.root_volume_type
+    volume_size = var.root_volume_gb
   }
 
   tags = {
@@ -187,8 +187,8 @@ resource "aws_instance" "extra_workers" {
   associate_public_ip_address = true
 
   root_block_device {
-    volume_type = "gp3"
-    volume_size = 20
+    volume_type = var.root_volume_type
+    volume_size = var.root_volume_gb
   }
 
   tags = {

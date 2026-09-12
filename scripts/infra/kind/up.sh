@@ -5,20 +5,25 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 AUTO_APPROVE="-auto-approve"
+CLUSTER_SPEC="dev"
 
 # shellcheck source=scripts/infra/kind/lib.sh
 source "${REPO_ROOT}/scripts/infra/kind/lib.sh"
 
 usage() {
   cat <<EOF
-Usage: ./scripts/infra/kind/up.sh [-y]
+Usage: ./scripts/infra/kind/up.sh [cluster] [-y]
 
 Create the local Kind cluster (terraform environments/kind).
+Config: clusters/kind/<id>/config.yaml (default id: dev).
 Writes kubeconfig to sensitive/kind/kubeconfig.
 
 -y is accepted for consistency; Kind apply is auto-approved.
 
-Teardown: $(dirname "$0")/down.sh
+  ./scripts/infra/up.sh kind
+  ./scripts/infra/up.sh kind dev
+
+Teardown: ./scripts/infra/down.sh kind
 EOF
 }
 
@@ -31,10 +36,12 @@ while [[ $# -gt 0 ]]; do
     -y | --yes)
       AUTO_APPROVE="-auto-approve"
       ;;
+    -c | --cluster)
+      CLUSTER_SPEC="${2:?cluster config required}"
+      shift
+      ;;
     *)
-      echo "Unknown argument: $1" >&2
-      usage >&2
-      exit 1
+      CLUSTER_SPEC="$1"
       ;;
   esac
   shift
@@ -46,6 +53,9 @@ if [[ ! -d "$ENV_DIR" ]]; then
   exit 1
 fi
 
+k8s_plat_kind_bind "${CLUSTER_SPEC}"
+k8s_plat_load_kind_vars
+
 echo "==> Kind: ${ENV_DIR}"
 "$REPO_ROOT/scripts/lib/require-tools.sh" terraform kubectl kind
 k8s_plat_migrate_to_sensitive
@@ -54,7 +64,7 @@ k8s_plat_prepare_kind_runtime
 cd "$ENV_DIR"
 k8s_plat_kind_terraform_init
 # shellcheck disable=SC2086
-terraform apply -input=false $AUTO_APPROVE
+terraform apply -input=false $AUTO_APPROVE "${K8S_TF_VAR_ARGS[@]}"
 
 KUBECONFIG_FILE="$(terraform output -raw kubeconfig_path)"
 CLUSTER_NAME="$(terraform output -raw cluster_name)"

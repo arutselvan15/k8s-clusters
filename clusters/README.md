@@ -5,6 +5,8 @@ One directory per cluster. **Do not put keys, PEM, kubeconfig, or Terraform stat
 ```text
 clusters/
 ├── backup.yaml                      # S3 bucket name for ./scripts/sensitive/s3.sh
+├── kind/
+│   └── dev/config.yaml           # ./scripts/infra/up.sh kind   (or kind dev)
 ├── aws/
 │   └── k8s-aws/config.yaml       # ./scripts/infra/up.sh aws k8s-aws
 └── openstack/
@@ -12,7 +14,7 @@ clusters/
     └── k8s-ocp/config.yaml       # ./scripts/infra/up.sh openstack k8s-ocp
 ```
 
-CLI id = directory name. `cluster_name` in the YAML should match. Nodes: `{cluster_name}-cp`, `{cluster_name}-wk-1`, `{cluster_name}-wk-2`, …. Outputs: `sensitive/<aws|openstack>/<cluster_name>/`.
+CLI id = directory name. `cluster_name` in the YAML should match. AWS/OpenStack nodes: `{cluster_name}-cp`, `{cluster_name}-wk-N`. Kind cluster name is `dev`. Outputs: `sensitive/kind/` or `sensitive/<aws|openstack>/<cluster_name>/`.
 
 ## Add a cluster
 
@@ -28,6 +30,7 @@ If a platform has more than one cluster dir, pass the id (`./scripts/infra/up.sh
 
 | File | Git? | Used by |
 |------|------|---------|
+| `kind/*/config.yaml` | yes | Kind Terraform knobs (`cluster_name`, node counts, version) |
 | `aws/*/config.yaml` | yes | Terraform + kubeadm knobs |
 | `openstack/*/config.yaml` | yes | same (`cloud:` must match a key in `clouds.yaml`) |
 | `backup.yaml` | yes | `./scripts/sensitive/s3.sh` bucket name only; offer after cluster build |

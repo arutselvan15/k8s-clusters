@@ -5,16 +5,21 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 AUTO_APPROVE="-auto-approve"
+CLUSTER_SPEC="dev"
 
 # shellcheck source=scripts/infra/kind/lib.sh
 source "${REPO_ROOT}/scripts/infra/kind/lib.sh"
 
 usage() {
   cat <<EOF
-Usage: ./scripts/infra/kind/down.sh [-y]
+Usage: ./scripts/infra/kind/down.sh [cluster] [-y]
 
 Destroy the local Kind cluster (terraform environments/kind).
+Same config id as up (default: dev).
 Kind destroy is auto-approved; -y is accepted for consistency.
+
+  ./scripts/infra/down.sh kind
+  ./scripts/infra/down.sh kind dev
 EOF
 }
 
@@ -27,10 +32,12 @@ while [[ $# -gt 0 ]]; do
     -y | --yes)
       AUTO_APPROVE="-auto-approve"
       ;;
+    -c | --cluster)
+      CLUSTER_SPEC="${2:?cluster config required}"
+      shift
+      ;;
     *)
-      echo "Unknown argument: $1" >&2
-      usage >&2
-      exit 1
+      CLUSTER_SPEC="$1"
       ;;
   esac
   shift
@@ -42,12 +49,15 @@ if [[ ! -d "$ENV_DIR" ]]; then
   exit 1
 fi
 
+k8s_plat_kind_bind "${CLUSTER_SPEC}"
+k8s_plat_load_kind_vars
+
 if [[ ! -f "${K8S_PLAT_KIND_TFSTATE}" && ! -d "${ENV_DIR}/.terraform" ]]; then
   echo "No Terraform state for Kind; nothing to destroy."
   exit 0
 fi
 
-echo "==> Destroy Kind: ${ENV_DIR}"
+echo "==> Destroy Kind cluster ${K8S_PLAT_CLUSTER_NAME}: ${ENV_DIR}"
 "$REPO_ROOT/scripts/lib/require-tools.sh" terraform
 k8s_plat_migrate_to_sensitive
 k8s_plat_prepare_kind_runtime
@@ -55,7 +65,7 @@ k8s_plat_prepare_kind_runtime
 cd "$ENV_DIR"
 k8s_plat_kind_terraform_init
 # shellcheck disable=SC2086
-terraform destroy -input=false $AUTO_APPROVE
+terraform destroy -input=false $AUTO_APPROVE "${K8S_TF_VAR_ARGS[@]}"
 
 if [[ -f "${K8S_PLAT_KIND_KUBECONFIG}" ]]; then
   rm -f "${K8S_PLAT_KIND_KUBECONFIG}"

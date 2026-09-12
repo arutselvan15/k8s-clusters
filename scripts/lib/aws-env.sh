@@ -31,26 +31,44 @@ k8s_plat_aws_cli_get() {
 
 k8s_plat_load_provider_vars() {
   local region cluster_name vpc_cidr admin_cidr node_instance_type worker_nodes
+  local subnet_newbits subnet_netnum root_volume_gb root_volume_type ssh_user ami_name ami_owner
+  local yaml="${K8S_PLAT_CLUSTER_CONFIG:?cluster config not resolved}"
+
   region="$(k8s_plat_aws_cli_get region 2>/dev/null || echo "us-east-1")"
   cluster_name="${K8S_PLAT_CLUSTER_NAME:?cluster_name not set; pass a cluster id to up.sh}"
-  vpc_cidr="$(k8s_plat_aws_infra_get vpc_cidr 2>/dev/null || echo "10.0.0.0/16")"
-  admin_cidr="$(k8s_plat_aws_infra_get admin_cidr 2>/dev/null || echo "0.0.0.0/0")"
-  node_instance_type="$(k8s_plat_aws_infra_get node_instance_type 2>/dev/null || echo "t3.medium")"
-  worker_nodes="$(k8s_plat_aws_infra_get worker_nodes 2>/dev/null || echo "1")"
+  vpc_cidr="$(k8s_plat_yaml_require "${yaml}" vpc_cidr)" || return 1
+  subnet_newbits="$(k8s_plat_yaml_require "${yaml}" subnet_newbits)" || return 1
+  subnet_netnum="$(k8s_plat_yaml_require "${yaml}" subnet_netnum)" || return 1
+  admin_cidr="$(k8s_plat_yaml_require "${yaml}" admin_cidr)" || return 1
+  node_instance_type="$(k8s_plat_yaml_require "${yaml}" node_instance_type)" || return 1
+  worker_nodes="$(k8s_plat_yaml_require "${yaml}" worker_nodes)" || return 1
+  root_volume_gb="$(k8s_plat_yaml_require "${yaml}" root_volume_gb)" || return 1
+  root_volume_type="$(k8s_plat_yaml_require "${yaml}" root_volume_type)" || return 1
+  ssh_user="$(k8s_plat_yaml_require "${yaml}" ssh_user)" || return 1
+  ami_name="$(k8s_plat_yaml_require "${yaml}" ami_name)" || return 1
+  ami_owner="$(k8s_plat_yaml_require "${yaml}" ami_owner)" || return 1
+
   echo "==> AWS provider from ${AWS_CONFIG_FILE}: region=${region} profile=${AWS_PROFILE}"
   echo "    cluster_name=${cluster_name} vpc_cidr=${vpc_cidr} admin_cidr=${admin_cidr}"
   echo "    node_instance_type=${node_instance_type} worker_nodes=${worker_nodes}"
   echo "    nodes ${cluster_name}-cp / ${cluster_name}-wk-N"
-  echo "    cluster config=${K8S_PLAT_CLUSTER_CONFIG}"
+  echo "    cluster config=${yaml}"
   K8S_TF_VAR_ARGS=(
     -var "aws_region=${region}"
     -var "aws_profile=${AWS_PROFILE}"
     -var "cluster_name=${cluster_name}"
     -var "ssh_private_key_path=${K8S_PLAT_CLUSTER_SSH_KEY}"
     -var "vpc_cidr=${vpc_cidr}"
+    -var "subnet_newbits=${subnet_newbits}"
+    -var "subnet_netnum=${subnet_netnum}"
     -var "admin_cidr=${admin_cidr}"
     -var "node_instance_type=${node_instance_type}"
     -var "worker_nodes=${worker_nodes}"
+    -var "root_volume_gb=${root_volume_gb}"
+    -var "root_volume_type=${root_volume_type}"
+    -var "ssh_user=${ssh_user}"
+    -var "ami_name=${ami_name}"
+    -var "ami_owner=${ami_owner}"
   )
 }
 

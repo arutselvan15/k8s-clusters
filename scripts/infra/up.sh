@@ -19,12 +19,12 @@ usage() {
   cat <<EOF
 Usage: $(basename "$0") [kind|aws|openstack] [cluster] [-y]
 
-  kind         ./scripts/infra/kind/up.sh
+  kind         ./scripts/infra/kind/up.sh [cluster]   (default id: dev)
   aws          ./scripts/infra/aws/up.sh [cluster]
   openstack    ./scripts/infra/openstack/up.sh [cluster]
 
-  cluster     config id or path (required for aws/openstack)
-              Directory under clusters/<platform>/, e.g. k8s-aws
+  cluster     config id (required for aws/openstack; kind defaults to dev)
+              Directory under clusters/<platform>/, e.g. k8s-aws or dev
 
   -y, --yes   pass through to the platform script
   -h, --help
@@ -69,8 +69,9 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ "${PLATFORM}" == "kind" ]]; then
+  CLUSTER="${CLUSTER:-dev}"
   # shellcheck disable=SC2086
-  "${REPO_ROOT}/scripts/infra/kind/up.sh" ${YES}
+  "${REPO_ROOT}/scripts/infra/kind/up.sh" ${YES} --cluster "${CLUSTER}"
   k8s_plat_s3_offer
   exit 0
 fi

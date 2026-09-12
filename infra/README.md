@@ -20,6 +20,8 @@ Commands: [`../scripts/infra/`](../scripts/README.md). Inputs: [`../clusters/`](
 source scripts/lib/kubeconfig-setup.sh sensitive/kind/kubeconfig
 ```
 
+Knobs: [`../clusters/kind/dev/config.yaml`](../clusters/kind/dev/config.yaml) (`cluster_name: dev`). `./scripts/infra/up.sh kind` is the same as `./scripts/infra/up.sh kind dev`.
+
 Day 0 + Day 1: `./scripts/bootstrap/up.sh`. Teardown: `./scripts/infra/down.sh kind`
 
 Host ports **8080 → 80** and **8443 → 443**. Cluster name is **`dev`**.

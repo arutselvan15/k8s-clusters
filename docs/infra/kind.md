@@ -22,14 +22,15 @@ Kind runs real Kubernetes inside a container. Networking and storage differ from
 |----------|------|
 | Terraform env | [`infra/terraform/environments/kind`](../../infra/terraform/environments/kind/) |
 | Kind module | [`infra/terraform/modules/cluster-kind`](../../infra/terraform/modules/cluster-kind/) |
+| Cluster YAML | [`clusters/kind/dev/config.yaml`](../../clusters/kind/dev/config.yaml) |
 | Kubeconfig output | `sensitive/kind/kubeconfig` (gitignored locally) |
 
-Dev Kind maps **host** ports to the node’s ingress ports:
+Dev Kind maps **host** ports from [`clusters/kind/dev/config.yaml`](../../clusters/kind/dev/config.yaml):
 
 ```yaml
-# infra/terraform/environments/kind extra_port_mappings (concept)
-hostPort: 8080  → containerPort: 80
-hostPort: 8443  → containerPort: 443
+terraform:
+  http_host_port: 8080   # → container 80
+  https_host_port: 8443  # → container 443
 ```
 
 That is why the Argo UI later is **https://argocd.dev:8443**, not `:443`.

@@ -10,7 +10,6 @@ source "${REPO_ROOT}/scripts/lib/paths.sh"
 source "${REPO_ROOT}/scripts/lib/cluster-config.sh"
 
 export OS_CLIENT_CONFIG_FILE="${K8S_PLAT_OS_CLOUDS}"
-export OS_CLOUD="${OS_CLOUD:-lab}"
 
 k8s_plat_os_config_get() {
   k8s_plat_yaml_get "${K8S_PLAT_CLUSTER_CONFIG}" "$1"
@@ -33,78 +32,68 @@ k8s_plat_require_os_credentials() {
     fi
   fi
   chmod 600 "${OS_CLIENT_CONFIG_FILE}"
+}
 
+k8s_plat_os_reject_placeholder() {
+  local key="$1"
+  local val="$2"
+  if [[ "${val}" == "REPLACE_ME" ]]; then
+    echo "Set ${key} in ${K8S_PLAT_CLUSTER_CONFIG} (Horizon: Images / Flavors / Networks)." >&2
+    return 1
+  fi
 }
 
 k8s_plat_load_os_provider_vars() {
+  local yaml="${K8S_PLAT_CLUSTER_CONFIG:?cluster config not resolved}"
   local cloud cluster_name admin_cidr network_name image_name
   local node_flavor worker_nodes ssh_user root_volume_gb availability_zone
-  local missing=0
-  local key=""
-  local val=""
+  local ssh_port kube_port ssh_key_algorithm image_most_recent volume_delete
 
-  OS_CLOUD="$(k8s_plat_os_config_get cloud 2>/dev/null || echo "${OS_CLOUD}")"
-  export OS_CLOUD
+  cloud="$(k8s_plat_yaml_require "${yaml}" cloud)" || return 1
+  export OS_CLOUD="${cloud}"
 
-  if k8s_plat_os_config_get network_name >/dev/null 2>&1; then
-    network_name="$(k8s_plat_os_config_get network_name)"
-  elif k8s_plat_os_config_get external_network >/dev/null 2>&1; then
-    network_name="$(k8s_plat_os_config_get external_network)"
-  else
-    echo "Missing network_name in ${K8S_PLAT_CLUSTER_CONFIG}" >&2
-    missing=1
-    network_name=""
-  fi
-
-  for key in image_name node_flavor; do
-    if ! k8s_plat_os_config_get "$key" >/dev/null 2>&1; then
-      echo "Missing ${key} in ${K8S_PLAT_CLUSTER_CONFIG}" >&2
-      missing=1
-    else
-      val="$(k8s_plat_os_config_get "$key")"
-      if [[ "${val}" == "REPLACE_ME" ]]; then
-        echo "Set ${key} in ${K8S_PLAT_CLUSTER_CONFIG} (Horizon: Images / Flavors / Networks)." >&2
-        missing=1
-      fi
-    fi
-  done
-  if [[ -n "${network_name}" && "${network_name}" == "REPLACE_ME" ]]; then
-    echo "Set network_name in ${K8S_PLAT_CLUSTER_CONFIG} to an existing Neutron network." >&2
-    missing=1
-  fi
-  if [[ "${missing}" -ne 0 ]]; then
-    echo "Set image_name, node_flavor, and network_name in clusters/openstack/<id>/config.yaml." >&2
-    return 1
-  fi
-
-  cloud="${OS_CLOUD}"
   cluster_name="${K8S_PLAT_CLUSTER_NAME:?cluster_name not set; pass a cluster id to up.sh}"
-  admin_cidr="$(k8s_plat_os_config_get admin_cidr 2>/dev/null || echo "0.0.0.0/0")"
-  image_name="$(k8s_plat_os_config_get image_name)"
-  node_flavor="$(k8s_plat_os_config_get node_flavor)"
-  worker_nodes="$(k8s_plat_os_config_get worker_nodes 2>/dev/null || echo "1")"
-  ssh_user="$(k8s_plat_os_config_get ssh_user 2>/dev/null || echo "ubuntu")"
-  root_volume_gb="$(k8s_plat_os_config_get root_volume_gb 2>/dev/null || echo "20")"
-  availability_zone="$(k8s_plat_os_config_get availability_zone 2>/dev/null || echo "")"
+  admin_cidr="$(k8s_plat_yaml_require "${yaml}" admin_cidr)" || return 1
+  ssh_port="$(k8s_plat_yaml_require "${yaml}" ssh_port)" || return 1
+  kube_port="$(k8s_plat_yaml_require "${yaml}" kubernetes_api_port)" || return 1
+  network_name="$(k8s_plat_yaml_require "${yaml}" network_name)" || return 1
+  image_name="$(k8s_plat_yaml_require "${yaml}" image_name)" || return 1
+  node_flavor="$(k8s_plat_yaml_require "${yaml}" node_flavor)" || return 1
+  worker_nodes="$(k8s_plat_yaml_require "${yaml}" worker_nodes)" || return 1
+  ssh_user="$(k8s_plat_yaml_require "${yaml}" ssh_user)" || return 1
+  root_volume_gb="$(k8s_plat_yaml_require "${yaml}" root_volume_gb)" || return 1
+  availability_zone="$(k8s_plat_yaml_require "${yaml}" availability_zone)" || return 1
+  ssh_key_algorithm="$(k8s_plat_yaml_require "${yaml}" ssh_key_algorithm)" || return 1
+  image_most_recent="$(k8s_plat_yaml_require "${yaml}" image_most_recent)" || return 1
+  volume_delete="$(k8s_plat_yaml_require "${yaml}" volume_delete_on_termination)" || return 1
+
+  k8s_plat_os_reject_placeholder image_name "${image_name}" || return 1
+  k8s_plat_os_reject_placeholder node_flavor "${node_flavor}" || return 1
+  k8s_plat_os_reject_placeholder network_name "${network_name}" || return 1
 
   echo "==> OpenStack from ${OS_CLIENT_CONFIG_FILE} cloud=${cloud}"
   echo "    cluster_name=${cluster_name} network_name=${network_name} admin_cidr=${admin_cidr}"
   echo "    image_name=${image_name} node_flavor=${node_flavor} worker_nodes=${worker_nodes}"
   echo "    nodes ${cluster_name}-cp / ${cluster_name}-wk-N"
   echo "    ssh_user=${ssh_user}"
-  echo "    cluster config=${K8S_PLAT_CLUSTER_CONFIG}"
+  echo "    cluster config=${yaml}"
 
   K8S_TF_VAR_ARGS=(
     -var "cloud=${cloud}"
     -var "cluster_name=${cluster_name}"
     -var "ssh_private_key_path=${K8S_PLAT_CLUSTER_SSH_KEY}"
     -var "admin_cidr=${admin_cidr}"
+    -var "ssh_port=${ssh_port}"
+    -var "kubernetes_api_port=${kube_port}"
     -var "network_name=${network_name}"
     -var "image_name=${image_name}"
+    -var "image_most_recent=${image_most_recent}"
     -var "node_flavor=${node_flavor}"
     -var "worker_nodes=${worker_nodes}"
     -var "ssh_user=${ssh_user}"
+    -var "ssh_key_algorithm=${ssh_key_algorithm}"
     -var "root_volume_gb=${root_volume_gb}"
+    -var "volume_delete_on_termination=${volume_delete}"
     -var "availability_zone=${availability_zone}"
   )
 }

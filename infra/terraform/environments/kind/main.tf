@@ -5,10 +5,10 @@ module "cluster" {
   kubernetes_version  = var.kubernetes_version
   control_plane_nodes = var.control_plane_nodes
   worker_nodes        = var.worker_nodes
-  kubeconfig_path     = abspath("${path.root}/../../../../sensitive/kind/kubeconfig")
+  kubeconfig_path     = var.kubeconfig_path
 
   extra_port_mappings = [
-    { container_port = 80, host_port = 8080, protocol = "TCP" },
-    { container_port = 443, host_port = 8443, protocol = "TCP" },
+    { container_port = 80, host_port = var.http_host_port, protocol = "TCP" },
+    { container_port = 443, host_port = var.https_host_port, protocol = "TCP" },
   ]
 }

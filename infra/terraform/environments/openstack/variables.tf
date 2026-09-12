@@ -1,6 +1,5 @@
 variable "cloud" {
   type        = string
-  default     = "lab"
   description = "Cloud name in k8s-platform/sensitive/openstack/clouds.yaml."
 }
 
@@ -16,18 +15,32 @@ variable "ssh_private_key_path" {
 
 variable "admin_cidr" {
   type        = string
-  default     = "0.0.0.0/0"
-  description = "Who may SSH (22) and reach the Kubernetes API (6443). Lab default is open."
+  description = "Who may SSH and reach the Kubernetes API."
+}
+
+variable "ssh_port" {
+  type        = number
+  description = "SSH ingress port."
+}
+
+variable "kubernetes_api_port" {
+  type        = number
+  description = "Kubernetes API ingress port."
 }
 
 variable "network_name" {
   type        = string
-  description = "Existing Neutron network to attach VMs to (not created). Example: tenant-internal-direct-net."
+  description = "Existing Neutron network to attach VMs to (not created)."
 }
 
 variable "image_name" {
   type        = string
   description = "Glance image name. Horizon: Compute → Images."
+}
+
+variable "image_most_recent" {
+  type        = bool
+  description = "If multiple Glance images share image_name, use the newest."
 }
 
 variable "node_flavor" {
@@ -37,24 +50,30 @@ variable "node_flavor" {
 
 variable "worker_nodes" {
   type        = number
-  default     = 1
   description = "Worker VM count (0 = control-plane only)."
 }
 
 variable "root_volume_gb" {
   type        = number
-  default     = 20
   description = "Boot volume size (GiB). Volume-boot so flavors with 0 local disk still work."
+}
+
+variable "volume_delete_on_termination" {
+  type        = bool
+  description = "Delete the boot volume when the instance is deleted."
 }
 
 variable "ssh_user" {
   type        = string
-  default     = "ubuntu"
-  description = "SSH user on the image (ubuntu for Ubuntu cloud images)."
+  description = "SSH user on the image."
+}
+
+variable "ssh_key_algorithm" {
+  type        = string
+  description = "tls_private_key algorithm (ED25519 or RSA)."
 }
 
 variable "availability_zone" {
   type        = string
-  default     = ""
   description = "Optional Nova AZ. Empty = let the scheduler choose."
 }

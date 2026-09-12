@@ -8,7 +8,7 @@ k8s_plat_cluster_token_ok() {
   [[ "$1" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]
 }
 
-# Usage: k8s_plat_resolve_cluster_config <aws|openstack> [id|path]
+# Usage: k8s_plat_resolve_cluster_config <kind|aws|openstack> [id|path]
 # Sets K8S_PLAT_CLUSTER_CONFIG from clusters/<platform>/<id>/config.yaml
 k8s_plat_cluster_yaml_in_dir() {
   local d="$1"
@@ -94,10 +94,11 @@ k8s_plat_apply_cluster_outputs() {
   case "${yaml}" in
     */clusters/aws/*) platform="aws" ;;
     */clusters/openstack/*) platform="openstack" ;;
+    */clusters/kind/*) platform="kind" ;;
     *) platform="${K8S_PLAT_CLUSTER_PLATFORM:-}" ;;
   esac
   if [[ -z "${platform}" ]]; then
-    echo "Cannot tell aws vs openstack for ${yaml}" >&2
+    echo "Cannot tell kind vs aws vs openstack for ${yaml}" >&2
     return 1
   fi
   K8S_PLAT_CLUSTER_PLATFORM="${platform}"
@@ -116,6 +117,19 @@ k8s_plat_apply_cluster_outputs() {
   fi
 
   K8S_PLAT_CLUSTER_NAME="${name}"
+  if [[ "${platform}" == "kind" ]]; then
+    K8S_PLAT_CLUSTER_DIR="${K8S_PLAT_SENSITIVE_DIR}/kind"
+    K8S_PLAT_CLUSTER_KUBECONFIG="${K8S_PLAT_KIND_KUBECONFIG}"
+    K8S_PLAT_CLUSTER_SSH_KEY=""
+    K8S_PLAT_CLUSTER_ENV=""
+    K8S_PLAT_CLUSTER_KNOWN_HOSTS=""
+    K8S_PLAT_TFSTATE="${K8S_PLAT_KIND_TFSTATE}"
+    mkdir -p "${K8S_PLAT_CLUSTER_DIR}"
+    echo "==> Cluster ${K8S_PLAT_CLUSTER_NAME} (config ${yaml})"
+    echo "    outputs ${K8S_PLAT_CLUSTER_DIR}"
+    return 0
+  fi
+
   K8S_PLAT_CLUSTER_DIR="${K8S_PLAT_SENSITIVE_DIR}/${platform}/${name}"
   K8S_PLAT_CLUSTER_KUBECONFIG="${K8S_PLAT_CLUSTER_DIR}/kubeconfig"
   K8S_PLAT_CLUSTER_SSH_KEY="${K8S_PLAT_CLUSTER_DIR}/ssh.pem"

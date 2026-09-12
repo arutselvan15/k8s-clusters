@@ -38,6 +38,10 @@ output "admin_cidr" {
   value = var.admin_cidr
 }
 
+output "ssh_user" {
+  value = var.ssh_user
+}
+
 output "control_plane_public_ip" {
   value = aws_instance.control_plane.public_ip
 }
@@ -51,7 +55,7 @@ output "ssh_private_key_path" {
 }
 
 output "ssh_control_plane" {
-  value = "ssh -i ${local_file.ssh_private_key.filename} ubuntu@${aws_instance.control_plane.public_ip}"
+  value = "ssh -i ${local_file.ssh_private_key.filename} ${var.ssh_user}@${aws_instance.control_plane.public_ip}"
 }
 
 output "worker_public_ip" {
@@ -69,5 +73,5 @@ output "worker_public_ips" {
 }
 
 output "ssh_worker" {
-  value = "ssh -i ${local_file.ssh_private_key.filename} ubuntu@${aws_instance.worker.public_ip}"
+  value = "ssh -i ${local_file.ssh_private_key.filename} ${var.ssh_user}@${aws_instance.worker.public_ip}"
 }

@@ -19,6 +19,8 @@ infra/terraform/
 source scripts/lib/kubeconfig-setup.sh sensitive/kind/kubeconfig
 ```
 
+Config: [`clusters/kind/dev/config.yaml`](../../clusters/kind/dev/config.yaml). Same as `./scripts/infra/up.sh kind dev`.
+
 Host ports **8080 → 80** and **8443 → 443** on the control-plane node (Argo UI later: https://argocd.dev:8443). Teardown: `./scripts/infra/down.sh kind`
 
 ## ec2

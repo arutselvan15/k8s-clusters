@@ -1,0 +1,16 @@
+# Kind local cluster (committed). Directory name is the config id.
+# Kind cluster name is `dev` (same as the GitOps overlay). Outputs: sensitive/kind/
+#
+#   ./scripts/infra/up.sh kind
+#   ./scripts/infra/up.sh kind dev
+
+cluster_name: dev
+
+terraform:
+  kubernetes_version: "1.32.2"
+  control_plane_nodes: 1
+  # Control-plane only for the laptop lab.
+  worker_nodes: 0
+  # Ingress on the first control-plane node (Argo UI https://argocd.dev:8443).
+  http_host_port: 8080
+  https_host_port: 8443

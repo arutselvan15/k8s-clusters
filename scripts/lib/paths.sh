@@ -221,3 +221,15 @@ PY
 k8s_plat_s3_offer() {
   "${REPO_ROOT}/scripts/sensitive/s3.sh" offer
 }
+
+# Required scalar from cluster YAML. Prints the value or errors.
+k8s_plat_yaml_require() {
+  local file="$1"
+  local key="$2"
+  local val=""
+  if ! val="$(k8s_plat_yaml_get "${file}" "${key}")"; then
+    echo "Missing ${key} in ${file}" >&2
+    return 1
+  fi
+  printf '%s' "${val}"
+}
