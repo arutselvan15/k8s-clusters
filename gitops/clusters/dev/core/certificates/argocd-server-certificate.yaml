@@ -1,5 +1,5 @@
-# TLS for Argo CD ingress — secret must match bootstrap/argocd/values/overlays/dev.yaml server.ingress.secretName.
-# When Ready: ./bootstrap/bootstrap.sh dev
+# TLS for Argo CD ingress — secret must match bootstrap/argocd/values.yaml server.ingress.secretName.
+# When Ready: ./bootstrap/bootstrap.sh
 
 apiVersion: cert-manager.io/v1
 kind: Certificate

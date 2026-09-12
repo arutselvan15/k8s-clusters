@@ -10,19 +10,33 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 usage() {
   cat <<EOF
-Usage: $(basename "$0") [overlay]
+Usage: $(basename "$0")
 
 Day 1 — installs or upgrades Argo CD on the cluster from the current shell.
 Safe to re-run.
 
-Overlay: dev, stg, prod (optional; default from bootstrap/env or dev).
-Environment is loaded in argocd/install.sh (bootstrap/env/).
+Helm values: bootstrap/argocd/values.yaml
+Secrets: sensitive/bootstrap/bootstrap.env
+Optional Helm extra: sensitive/bootstrap/values.yaml
 EOF
 }
 
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
   usage
   exit 0
+fi
+
+if [[ -n "${1:-}" ]]; then
+  case "$1" in
+    dev | stg | prod)
+      echo "==> Ignoring overlay '$1' (no Helm overlays)."
+      ;;
+    *)
+      echo "Unexpected argument: $1" >&2
+      usage >&2
+      exit 1
+      ;;
+  esac
 fi
 
 if [[ -n "${2:-}" ]]; then
@@ -32,7 +46,7 @@ if [[ -n "${2:-}" ]]; then
 fi
 
 echo "==> Day 1: Argo CD"
-"$SCRIPT_DIR/argocd/install.sh" "${1:-}"
+"$SCRIPT_DIR/argocd/install.sh"
 
 echo ""
 echo "Day 1 complete."

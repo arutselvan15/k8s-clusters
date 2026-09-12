@@ -5,7 +5,7 @@
 | `repo-creds.*.yaml` | Credential templates (`repo-creds` Secret type) |
 | `repo.*.yaml` | Repository entries (`repository` Secret type) |
 
-Manifests with **`${VAR}`** placeholders are rendered with **`envsubst`** using variables from [`../env/`](../env/) (`defaults.env` + `bootstrap.env`). Plain YAML is applied with `kubectl apply`.
+Manifests with **`${VAR}`** placeholders are rendered with **`envsubst`** using `bootstrap/env/defaults.env` plus **`sensitive/bootstrap/bootstrap.env`**. Plain YAML is applied with `kubectl apply`.
 
 | File | Notes |
 |------|--------|

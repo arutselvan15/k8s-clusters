@@ -59,7 +59,7 @@ Use the **common** Day 1 / Day 2 path (only the kubeconfig path changes):
 
 ```bash
 source scripts/lib/kubeconfig-setup.sh sensitive/kind/k8s-kind/kubeconfig
-./bootstrap/bootstrap.sh dev
+./bootstrap/bootstrap.sh
 ./scripts/gitops/start.sh dev
 ```
 

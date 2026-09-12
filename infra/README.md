@@ -60,7 +60,7 @@ S3 backup of `sensitive/` is offered by `./scripts/infra/up.sh` and `./scripts/i
 
 ```bash
 source scripts/lib/kubeconfig-setup.sh sensitive/kind/<cluster_name>/kubeconfig   # or aws / openstack path above
-./bootstrap/bootstrap.sh dev
+./bootstrap/bootstrap.sh
 ```
 
 Guides: [docs/infra/](../docs/infra/)

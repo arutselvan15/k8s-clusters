@@ -1,0 +1,40 @@
+# Argo CD Helm values (single file — no env overlays).
+# Optional extra file (gitignored): sensitive/bootstrap/values.yaml
+# Secrets: sensitive/bootstrap/bootstrap.env (not this file).
+
+global:
+  domain: argocd
+
+configs:
+  params:
+    # TLS terminates at ingress; pod serves HTTP.
+    server.insecure: true
+    url: https://argocd:8443
+
+server:
+  service:
+    type: ClusterIP
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hostname: argocd
+    path: /
+    pathType: Prefix
+    tls: true
+    secretName: argocd-server-tls
+    annotations:
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/backend-protocol: HTTP
+
+controller:
+  replicas: 1
+
+repoServer:
+  replicas: 1
+
+applicationSet:
+  replicas: 1
+
+redis:
+  enabled: true

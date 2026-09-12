@@ -30,7 +30,7 @@ source scripts/lib/kubeconfig-setup.sh sensitive/kind/<cluster_name>/kubeconfig
 ./scripts/infra/down.sh aws k8s-aws -y
 ```
 
-Day 1 on **any** cluster: `./bootstrap/bootstrap.sh dev` (repo `bootstrap/`, not this folder).
+Day 1 on **any** cluster: `./bootstrap/bootstrap.sh` (repo `bootstrap/`, not this folder).
 
 `./scripts/bootstrap/up.sh` is Kind-only convenience (Day 0 Kind + Day 1). After Day 0 up/down (and kubeadm up/reset) you are prompted to push `sensitive/` to S3 with prune.
 

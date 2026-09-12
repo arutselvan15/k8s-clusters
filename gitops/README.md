@@ -8,7 +8,7 @@ source scripts/lib/kubeconfig-setup.sh sensitive/kind/<cluster_name>/kubeconfig 
 ./scripts/gitops/start.sh dev
 ```
 
-When **`argocd-server-tls`** is Ready, re-run **`./bootstrap/bootstrap.sh dev`** → **https://argocd.dev:8443**.
+When **`argocd-server-tls`** is Ready, re-run **`./bootstrap/bootstrap.sh`** → **https://argocd.dev:8443**.
 
 Full reference below. Add an app: values under `apps/` + Application under `clusters/dev/core/applications/`.
 
@@ -94,8 +94,8 @@ gitops/
 
 ## Prerequisites
 
-1. **Day 1 done** — Argo CD running (`./scripts/bootstrap/up.sh`, or `./scripts/infra/up.sh kind` then `./bootstrap/bootstrap.sh dev`).
-2. **Git repo registered** — `argocd/install.sh` applies repo Secrets ([`../bootstrap/env/`](../bootstrap/env/)).
+1. **Day 1 done** — Argo CD running (`./scripts/bootstrap/up.sh`, or `./scripts/infra/up.sh kind` then `./bootstrap/bootstrap.sh`).
+2. **Git repo registered** — `argocd/install.sh` applies repo Secrets ([`../bootstrap/env/`](../bootstrap/env/) + `sensitive/bootstrap/bootstrap.env`).
 3. **`KUBECONFIG`** set ([`../scripts/lib/kubeconfig-setup.sh`](../scripts/lib/kubeconfig-setup.sh)).
 4. **Push to Git** — Argo clones remote, not your working tree.
 
@@ -134,7 +134,7 @@ kubectl get applications -n argocd
 kubectl get certificate -n argocd argocd-server-tls
 ```
 
-Add **`127.0.0.1 argocd.dev`** to `/etc/hosts`. When the Certificate is **Ready**, run **`./bootstrap/bootstrap.sh dev`**, then open **https://argocd.dev:8443**.
+Add **`127.0.0.1 argocd.dev`** to `/etc/hosts`. When the Certificate is **Ready**, run **`./bootstrap/bootstrap.sh`**, then open **https://argocd.dev:8443**.
 
 ### 5. Migrate old layouts
 
@@ -168,7 +168,7 @@ Do not add cert YAML under **`applications/`**. Use **`core-certificates`** → 
 ### Add a core infra certificate
 
 1. Add YAML under **`gitops/clusters/dev/core/certificates/`** (never under **`applications/`**).
-2. Align **`secretName`** / DNS with the consumer (e.g. [`bootstrap/argocd/values/overlays/dev.yaml`](../bootstrap/argocd/values/overlays/dev.yaml)).
+2. Align **`secretName`** / DNS with the consumer (e.g. [`bootstrap/argocd/values.yaml`](../bootstrap/argocd/values.yaml)).
 3. Push — **`core-certificates`** syncs only.
 
 ---

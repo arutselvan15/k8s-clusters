@@ -61,7 +61,7 @@ terraform version   # >= 1.5
 
 ```bash
 source scripts/lib/kubeconfig-setup.sh sensitive/kind/<cluster_name>/kubeconfig   # or sensitive/<env>/<cluster_name>/kubeconfig
-./bootstrap/bootstrap.sh dev
+./bootstrap/bootstrap.sh
 ```
 
 Docs: [docs/README.md](../../docs/README.md)

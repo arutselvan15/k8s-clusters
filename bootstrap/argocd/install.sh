@@ -8,9 +8,10 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BOOTSTRAP_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+REPO_ROOT="$(cd "${BOOTSTRAP_DIR}/.." && pwd)"
 REPOS_DIR="${SCRIPT_DIR}/repos"
-VALUES_BASE="${SCRIPT_DIR}/values/base.yaml"
-OVERLAYS_DIR="${SCRIPT_DIR}/values/overlays"
+VALUES_FILE="${SCRIPT_DIR}/values.yaml"
+VALUES_SENSITIVE="${REPO_ROOT}/sensitive/bootstrap/values.yaml"
 
 load_bootstrap_env() {
   # shellcheck source=../env/load.sh
@@ -73,15 +74,12 @@ set_argocd_admin_password_from_env() {
 
   hash="$(argocd_admin_bcrypt_hash "$ARGOCD_ADMIN_PASSWORD")"
   mtime="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-  echo "Setting Argo CD admin password from bootstrap.env (user admin) ..."
+  echo "Setting Argo CD admin password from sensitive/bootstrap/bootstrap.env (user admin) ..."
   kubectl patch secret argocd-secret -n argocd --type merge \
     --patch "{\"stringData\":{\"admin.password\":\"${hash}\",\"admin.passwordMtime\":\"${mtime}\"}}"
 }
 
 install_argocd() {
-  local overlay=$1
-  local overlay_file="${OVERLAYS_DIR}/${overlay}.yaml"
-
   echo "Adding Argo CD Helm repo ..."
   helm repo add argo https://argoproj.github.io/argo-helm 2>/dev/null || true
   helm repo update
@@ -90,33 +88,40 @@ install_argocd() {
   kubectl create namespace argocd \
     --dry-run=client -o yaml | kubectl apply -f -
 
-  echo "Installing or upgrading Argo CD (chart ${ARGO_CD_CHART_VERSION}, overlay ${overlay}) ..."
-  helm upgrade --install argocd argo/argo-cd \
-    --namespace argocd \
-    --version "${ARGO_CD_CHART_VERSION}" \
-    --values "$VALUES_BASE" \
-    --values "$overlay_file" \
-    --wait
+  echo "Installing or upgrading Argo CD (chart ${ARGO_CD_CHART_VERSION}) ..."
+  if [[ -f "${VALUES_SENSITIVE}" ]]; then
+    echo "    extra values ${VALUES_SENSITIVE}"
+    helm upgrade --install argocd argo/argo-cd \
+      --namespace argocd \
+      --version "${ARGO_CD_CHART_VERSION}" \
+      --values "${VALUES_FILE}" \
+      --values "${VALUES_SENSITIVE}" \
+      --wait
+  else
+    helm upgrade --install argocd argo/argo-cd \
+      --namespace argocd \
+      --version "${ARGO_CD_CHART_VERSION}" \
+      --values "${VALUES_FILE}" \
+      --wait
+  fi
 }
 
 usage() {
   cat <<EOF
-Usage: $(basename "$0") [overlay]
+Usage: $(basename "$0")
 
 Installs or upgrades Argo CD with Helm (pinned chart version). Safe to re-run.
 
-Overlays: dev, stg, prod (values/overlays/). Default: \$ARGOCD_OVERLAY or dev.
+Helm values: ${VALUES_FILE}
+Optional extra: sensitive/bootstrap/values.yaml
+Secrets: sensitive/bootstrap/bootstrap.env
 
 Chart: argo/argo-cd ${ARGO_CD_CHART_VERSION}
 
-After Helm: repo-creds (from bootstrap/env) then repos/ (see repos/README.md).
-GitOps (core-apps seed): ./scripts/gitops/start.sh <profile> — not part of bootstrap.
+After Helm: repo-creds then repos/ (see repos/README.md).
+GitOps seed: ./scripts/gitops/start.sh <profile> — not part of bootstrap.
 
-Environment: bootstrap/env/defaults.env + optional bootstrap/env/bootstrap.env
-Optional: ARGOCD_ADMIN_PASSWORD in bootstrap.env (patched after Helm; omitted if unset)
-
-Example:
-  $(basename "$0") dev
+Optional: ARGOCD_ADMIN_PASSWORD in sensitive/bootstrap/bootstrap.env
 EOF
 }
 
@@ -127,7 +132,18 @@ if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
   exit 0
 fi
 
-OVERLAY="${1:-${ARGOCD_OVERLAY:-dev}}"
+if [[ -n "${1:-}" ]]; then
+  case "$1" in
+    dev | stg | prod)
+      echo "==> Ignoring overlay '$1' (Helm uses argocd/values.yaml)."
+      ;;
+    *)
+      echo "Unexpected argument: $1" >&2
+      usage >&2
+      exit 1
+      ;;
+  esac
+fi
 
 if [[ -n "${2:-}" ]]; then
   echo "Unexpected argument: $2" >&2
@@ -135,15 +151,9 @@ if [[ -n "${2:-}" ]]; then
   exit 1
 fi
 
-OVERLAY_FILE="${OVERLAYS_DIR}/${OVERLAY}.yaml"
-if [[ ! -f "$OVERLAY_FILE" ]]; then
-  echo "Unknown overlay '$OVERLAY' (expected ${OVERLAY_FILE})" >&2
-  exit 1
-fi
-
-install_argocd "$OVERLAY"
+install_argocd
 set_argocd_admin_password_from_env
 apply_argocd_repo_creds
 apply_argocd_repos
 
-echo "Argo CD ready (overlay: ${OVERLAY}, chart: ${ARGO_CD_CHART_VERSION})."
+echo "Argo CD ready (chart: ${ARGO_CD_CHART_VERSION})."

@@ -25,12 +25,14 @@ k8s_plat_migrate_to_sensitive() {
   local src dest name parent
   mkdir -p \
     "${K8S_PLAT_SENSITIVE_DIR}/aws" \
-    "${K8S_PLAT_SENSITIVE_DIR}/openstack"
+    "${K8S_PLAT_SENSITIVE_DIR}/openstack" \
+    "${K8S_PLAT_SENSITIVE_DIR}/bootstrap"
 
   for src in \
     "${REPO_ROOT}/config/aws/credentials:${K8S_PLAT_AWS_CREDENTIALS}" \
     "${REPO_ROOT}/config/aws/cli.conf:${K8S_PLAT_AWS_CLI_CONF}" \
-    "${REPO_ROOT}/config/openstack/clouds.yaml:${K8S_PLAT_OS_CLOUDS}"; do
+    "${REPO_ROOT}/config/openstack/clouds.yaml:${K8S_PLAT_OS_CLOUDS}" \
+    "${REPO_ROOT}/bootstrap/env/bootstrap.env:${K8S_PLAT_SENSITIVE_DIR}/bootstrap/bootstrap.env"; do
     dest="${src#*:}"
     src="${src%%:*}"
     if [[ -f "${src}" && ! -f "${dest}" ]]; then

@@ -27,18 +27,18 @@ Browser port **8443** = Kind host mapping to node **443** (see [ingress-nginx](.
 | Concern | Owner | What |
 |---------|--------|------|
 | TLS Secret **contents** | Day 2 GitOps — **`core-certificates`** | `ClusterIssuer` + `Certificate` → Secret |
-| Argo **Ingress** object (host, class, `secretName`) | Day 1 Helm — [`bootstrap/argocd/values/overlays/dev.yaml`](../../bootstrap/argocd/values/overlays/dev.yaml) | Enables ingress, points at Secret name |
+| Argo **Ingress** object (host, class, `secretName`) | Day 1 Helm — [`bootstrap/argocd/values.yaml`](../../bootstrap/argocd/values.yaml) | Enables ingress, points at Secret name |
 
 Helm: *“mount Secret `argocd-server-tls` on ingress.”*  
 GitOps: *“create that Secret via cert-manager.”*
 
 ```text
-core-certificates (GitOps)          bootstrap.sh dev (Helm) — after cert Ready
+core-certificates (GitOps)          bootstrap.sh (Helm) — after cert Ready
 ──────────────────────────          ─────────────────────────────────────────
 ClusterIssuer selfsigned       →    (issuer must exist first)
 Certificate argocd-server-tls  →    writes Secret argocd-server-tls
                                     ↓ Certificate Ready
-./bootstrap/bootstrap.sh dev   →    server.ingress enabled + secretName set
+./bootstrap/bootstrap.sh   →    server.ingress enabled + secretName set
 ```
 
 First bootstrap (during `scripts/bootstrap/up.sh`) can run **before** the Secret exists. **Re-run** bootstrap after the Certificate is **Ready**.
@@ -58,11 +58,11 @@ Key files:
 | [`clusterissuer-selfsigned.yaml`](../../gitops/clusters/dev/core/certificates/clusterissuer-selfsigned.yaml) | Dev-only issuer (not public CA trust) |
 | [`argocd-server-certificate.yaml`](../../gitops/clusters/dev/core/certificates/argocd-server-certificate.yaml) | `dnsNames: [argocd.dev]`, `secretName: argocd-server-tls` |
 
-`secretName` and DNS must match the Helm overlay (`hostname`, `server.ingress.secretName`).
+`secretName` and DNS must match Helm (`hostname`, `server.ingress.secretName` in `bootstrap/argocd/values.yaml`).
 
-## Helm: Argo server ingress (Day 1 overlay)
+## Helm: Argo server ingress (Day 1)
 
-[`bootstrap/argocd/values/overlays/dev.yaml`](../../bootstrap/argocd/values/overlays/dev.yaml):
+[`bootstrap/argocd/values.yaml`](../../bootstrap/argocd/values.yaml):
 
 - `server.ingress.enabled: true`, `ingressClassName: nginx`, `hostname: argocd.dev`
 - `server.ingress.tls: true`, `secretName: argocd-server-tls`
@@ -80,7 +80,7 @@ Key files:
    # STATUS Ready
    ```
 
-4. `./bootstrap/bootstrap.sh dev`
+4. `./bootstrap/bootstrap.sh`
 5. Open https://argocd.dev:8443 on Kind (admin password: [bootstrap](../bootstrap/argocd.md))
 
 Until the Certificate is Ready, use port-forward from [bootstrap/argocd.md](../bootstrap/argocd.md).

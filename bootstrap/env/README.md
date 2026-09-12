@@ -4,19 +4,17 @@ Loaded **only** by [`../argocd/install.sh`](../argocd/install.sh) via `load.sh`.
 
 | File | In Git | Purpose |
 |------|--------|---------|
-| `defaults.env` | yes | `ARGO_CD_CHART_VERSION`, default `ARGOCD_OVERLAY`, `GIT_REPO_URL` |
-| `bootstrap.env.example` | yes | Template for local overrides |
-| `bootstrap.env` | **no** | `GITHUB_PAT`, `GITHUB_SSH_PRIVATE_KEY_B64`, `ARGOCD_ADMIN_PASSWORD`, etc. |
-| `load.sh` | yes | `set -a`; sources `defaults.env`, then `bootstrap.env` if present |
+| `defaults.env` | yes | `ARGO_CD_CHART_VERSION`, `GIT_REPO_URL` |
+| `bootstrap.env.example` | yes | Template — copy to `sensitive/bootstrap/bootstrap.env` |
+| `load.sh` | yes | Sources defaults, then `sensitive/bootstrap/bootstrap.env` |
 
-`load.sh` exports variables so **`envsubst`** in `install.sh` can render `${VAR}` in [`../argocd/repos/`](../argocd/repos/) manifests.
+Secrets (`GITHUB_PAT`, `GITHUB_SSH_PRIVATE_KEY_B64`, `ARGOCD_ADMIN_PASSWORD`) live in **`sensitive/bootstrap/bootstrap.env`**, not under `bootstrap/env/`. Optional Helm overrides: **`sensitive/bootstrap/values.yaml`**.
 
 ```bash
-cp bootstrap/env/bootstrap.env.example bootstrap/env/bootstrap.env
-# edit secrets — never commit bootstrap.env
-./bootstrap/bootstrap.sh dev
+mkdir -p sensitive/bootstrap
+cp bootstrap/env/bootstrap.env.example sensitive/bootstrap/bootstrap.env
+# edit secrets — never commit that file
+./bootstrap/bootstrap.sh
 ```
 
-Overlay resolution (in `install.sh`): CLI argument → `ARGOCD_OVERLAY` from env → `dev`.
-
-Kubeconfig is not stored here — use `source scripts/lib/kubeconfig-setup.sh <file>`.
+Kubeconfig is separate: `source scripts/lib/kubeconfig-setup.sh <file>`.

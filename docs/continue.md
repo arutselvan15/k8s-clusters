@@ -39,7 +39,7 @@ Index: [`docs/README.md`](./README.md) · Model: [`platform-lifecycle.md`](./pla
 
 ### Common (Day 1–2)
 
-- Bootstrap: `./bootstrap/bootstrap.sh dev`
+- Bootstrap: `./bootstrap/bootstrap.sh`
 - GitOps seed: `./scripts/gitops/start.sh dev` → `gitops/clusters/dev/`
 - Apps: ingress-nginx, cert-manager, core-certificates, kyverno, core-policies
 - Guides: [bootstrap/](./bootstrap/), [gitops/](./gitops/)
@@ -69,7 +69,7 @@ Index: [`docs/README.md`](./README.md) · Model: [`platform-lifecycle.md`](./pla
 
 # Day 1 + 2 — same
 source scripts/lib/kubeconfig-setup.sh sensitive/kind/<cluster_name>/kubeconfig   # or sensitive/<env>/<cluster_name>/kubeconfig
-./bootstrap/bootstrap.sh dev
+./bootstrap/bootstrap.sh
 git push origin main
 ./scripts/gitops/start.sh dev
 ```

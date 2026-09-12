@@ -28,10 +28,11 @@ Optional for a custom Argo admin password: `htpasswd` (e.g. Apache `httpd` tools
 ## Secrets (optional, Day 1)
 
 ```bash
-cp bootstrap/env/bootstrap.env.example bootstrap/env/bootstrap.env
+mkdir -p sensitive/bootstrap
+cp bootstrap/env/bootstrap.env.example sensitive/bootstrap/bootstrap.env
 ```
 
-Edit `bootstrap.env` (gitignored) for `GITHUB_PAT`, SSH key, or `ARGOCD_ADMIN_PASSWORD`. Committed defaults live in [`bootstrap/env/defaults.env`](../bootstrap/env/defaults.env) (`ARGO_CD_CHART_VERSION`, `GIT_REPO_URL`).
+Edit `sensitive/bootstrap/bootstrap.env` (gitignored) for `GITHUB_PAT`, SSH key, or `ARGOCD_ADMIN_PASSWORD`. Committed defaults live in [`bootstrap/env/defaults.env`](../bootstrap/env/defaults.env) (`ARGO_CD_CHART_VERSION`, `GIT_REPO_URL`). Optional Helm overrides: `sensitive/bootstrap/values.yaml` (see `bootstrap/argocd/values.example.yaml`).
 
 ## Kubeconfig habit
 
@@ -43,6 +44,6 @@ source scripts/lib/kubeconfig-setup.sh sensitive/aws/k8s-aws/kubeconfig     # AW
 source scripts/lib/kubeconfig-setup.sh sensitive/openstack/k8s-ocp/kubeconfig      # OpenStack after kubeadm
 ```
 
-GitOps profile **`dev`** (`bootstrap.sh dev`, `gitops/clusters/dev/`) is the cluster folder name, not a second Kind cluster.
+GitOps profile **`dev`** (`./scripts/gitops/start.sh dev`, `gitops/clusters/dev/`) is the GitOps folder name, not a second Kind cluster.
 
 **Next:** [Day 0 — pick an environment](./infra/README.md)

@@ -6,7 +6,7 @@ Detail: [argocd.md](./argocd.md)
 
 ```bash
 source scripts/lib/kubeconfig-setup.sh sensitive/<env>/<cluster_name>/kubeconfig
-./bootstrap/bootstrap.sh dev
+./bootstrap/bootstrap.sh
 ```
 
 Kind shortcut (Day 0 Kind + this step): `./scripts/bootstrap/up.sh`

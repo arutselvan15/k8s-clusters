@@ -20,10 +20,10 @@ Git + scripts/gitops/start.sh    →  Applications sync platform
 ## What runs
 
 ```text
-./bootstrap/bootstrap.sh dev
-        └── bootstrap/argocd/install.sh dev
-              ├── load bootstrap/env/ (defaults.env + bootstrap.env)
-              ├── helm upgrade --install argo-cd (chart pin in defaults.env)
+./bootstrap/bootstrap.sh
+        └── bootstrap/argocd/install.sh
+              ├── load bootstrap/env/defaults.env + sensitive/bootstrap/bootstrap.env
+              ├── helm upgrade --install argo-cd (values.yaml + optional sensitive/bootstrap/values.yaml)
               ├── apply argocd/repos/repo-creds.*.yaml
               └── apply argocd/repos/repo.*.yaml
 ```
@@ -35,9 +35,9 @@ Env is loaded **only** in `install.sh`, not in `bootstrap.sh`.
 | Concern | Where |
 |---------|--------|
 | Chart version | `bootstrap/env/defaults.env` → `ARGO_CD_CHART_VERSION` |
-| Helm values (base + overlay) | `bootstrap/argocd/values/base.yaml`, `overlays/dev.yaml` |
+| Helm values | `bootstrap/argocd/values.yaml` + optional `sensitive/bootstrap/values.yaml` |
 | Git URL (must match GitOps) | `GIT_REPO_URL` in defaults + `bootstrap/argocd/repos/repo.k8s-platform.yaml` |
-| Private GitHub | `bootstrap.env` → PAT or SSH templates in `repos/` |
+| Private GitHub | `sensitive/bootstrap/bootstrap.env` → PAT or SSH templates in `repos/` |
 
 ## What deliberately stays in bootstrap (not GitOps)
 
@@ -62,7 +62,7 @@ Before Day 2 sync, UI access is usually port-forward:
 kubectl port-forward svc/argocd-server -n argocd 8888:80
 ```
 
-Admin user: **`admin`**. Password from `ARGOCD_ADMIN_PASSWORD` in `bootstrap.env`, or:
+Admin user: **`admin`**. Password from `ARGOCD_ADMIN_PASSWORD` in `sensitive/bootstrap/bootstrap.env`, or:
 
 ```bash
 kubectl get secret argocd-initial-admin-secret -n argocd \

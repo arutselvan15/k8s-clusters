@@ -1,4 +1,4 @@
-# GitHub repo-creds (SSH). Requires ${GITHUB_SSH_PRIVATE_KEY_B64} in bootstrap/env/bootstrap.env.
+# GitHub repo-creds (SSH). Requires ${GITHUB_SSH_PRIVATE_KEY_B64} in sensitive/bootstrap/bootstrap.env.
 apiVersion: v1
 kind: Secret
 metadata:

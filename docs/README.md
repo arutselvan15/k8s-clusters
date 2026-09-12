@@ -45,7 +45,7 @@ docs/
 
 # Same from here on (kubeconfig path is the only difference)
 source scripts/lib/kubeconfig-setup.sh sensitive/kind/<cluster_name>/kubeconfig   # or sensitive/<env>/<cluster_name>/kubeconfig
-./bootstrap/bootstrap.sh dev
+./bootstrap/bootstrap.sh
 git push origin main
 ./scripts/gitops/start.sh dev
 ```

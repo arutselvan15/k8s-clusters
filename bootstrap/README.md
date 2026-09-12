@@ -4,69 +4,55 @@ Install **Argo CD** with Helm, then apply repo-creds and repository Secrets. Pla
 
 ```bash
 source scripts/lib/kubeconfig-setup.sh sensitive/kind/<cluster_name>/kubeconfig   # or sensitive/<env>/<cluster_name>/kubeconfig
-./bootstrap/bootstrap.sh dev
+./bootstrap/bootstrap.sh
 ```
 
 Kind (Day 0 + this step): `./scripts/bootstrap/up.sh`
 
-After GitOps creates **`argocd-server-tls`**, re-run `./bootstrap/bootstrap.sh dev` → **https://argocd.dev:8443**.
+After GitOps creates **`argocd-server-tls`**, re-run `./bootstrap/bootstrap.sh` → **https://argocd.dev:8443**.
 
 ## How it runs
 
 ```text
-bootstrap/bootstrap.sh [overlay]
+bootstrap/bootstrap.sh
         │
-        └── argocd/install.sh [overlay]
-                  ├── load bootstrap/env/ (defaults.env + bootstrap.env)
-                  ├── Helm: argo-cd chart (pin in defaults.env)
+        └── argocd/install.sh
+                  ├── load bootstrap/env/defaults.env
+                  ├── load sensitive/bootstrap/bootstrap.env (if present)
+                  ├── Helm: argo-cd chart + argocd/values.yaml
+                  │         + optional sensitive/bootstrap/values.yaml
                   ├── apply repo-creds.*.yaml  (envsubst if ${VAR} present)
                   └── apply repo.*.yaml
-                  (GitOps seed: scripts/gitops/start.sh — separate from Day 1)
 ```
 
-- **`bootstrap.sh`** — thin wrapper; does **not** load env (overlay optional, forwarded to `install.sh`).
-- **`argocd/install.sh`** — Day 1 implementation; **only** place that sources `env/load.sh`.
+- **`bootstrap.sh`** — thin wrapper.
+- **`argocd/install.sh`** — only place that sources `env/load.sh`.
 
-Prerequisites on `PATH` for local one-shot: [`../scripts/lib/require-tools.sh`](../scripts/lib/require-tools.sh) (`kubectl`, `helm`, `envsubst`) — called from [`../scripts/bootstrap/up.sh`](../scripts/bootstrap/up.sh). After AWS/OpenStack kubeadm, source the matching kubeconfig and run `./bootstrap/bootstrap.sh` the same way. Run Day 1 directly only after those tools are installed.
+Prerequisites: [`../scripts/lib/require-tools.sh`](../scripts/lib/require-tools.sh) (`kubectl`, `helm`, `envsubst`).
 
 ## Configuration
 
-```text
-bootstrap/env/
-├── defaults.env           # committed — ARGO_CD_CHART_VERSION, ARGOCD_OVERLAY, GIT_REPO_URL
-├── bootstrap.env.example  # template
-├── bootstrap.env          # gitignored — secrets and overrides
-└── load.sh                # sourced by argocd/install.sh only
-```
+| File | Git? | Purpose |
+|------|------|---------|
+| `argocd/values.yaml` | yes | Helm (ingress host `argocd.dev`, TLS secret name) |
+| `argocd/values.example.yaml` | yes | Copy to `sensitive/bootstrap/values.yaml` to override Helm |
+| `env/defaults.env` | yes | Chart pin, `GIT_REPO_URL` |
+| `env/bootstrap.env.example` | yes | Copy to `sensitive/bootstrap/bootstrap.env` |
+| `sensitive/bootstrap/bootstrap.env` | **no** | `GITHUB_PAT`, SSH key, `ARGOCD_ADMIN_PASSWORD` |
+| `sensitive/bootstrap/values.yaml` | **no** | Extra Helm values |
 
 ```bash
-cp bootstrap/env/bootstrap.env.example bootstrap/env/bootstrap.env
-# optional: GITHUB_PAT, GITHUB_SSH_PRIVATE_KEY_B64 for private GitHub
+mkdir -p sensitive/bootstrap
+cp bootstrap/env/bootstrap.env.example sensitive/bootstrap/bootstrap.env
 ```
 
 Details: [`env/README.md`](env/README.md). Repo manifests: [`argocd/repos/README.md`](argocd/repos/README.md).
 
-Kubeconfig (cluster targeting) is separate:
-
-```bash
-source scripts/lib/kubeconfig-setup.sh sensitive/kind/<cluster_name>/kubeconfig
-```
-
-## Run Day 1
-
-```bash
-source scripts/lib/kubeconfig-setup.sh sensitive/kind/<cluster_name>/kubeconfig
-./bootstrap/bootstrap.sh dev          # or omit overlay → ARGOCD_OVERLAY / dev
-# equivalent: ./bootstrap/argocd/install.sh dev
-```
-
 Keep `GIT_REPO_URL` in `defaults.env` and `repo.k8s-platform.yaml` aligned with `gitops/clusters/…` Application `repoURL` values.
 
-Dev ingress hostname and TLS secret name: [`argocd/values/overlays/dev.yaml`](argocd/values/overlays/dev.yaml) (Helm); Secret material from GitOps **`argocd-server-tls`** Certificate.
+TLS Secret **material** comes from GitOps **`argocd-server-tls`**. Helm only sets `secretName`.
 
-## Dev: ingress + TLS (two steps)
-
-Argo CD itself is **Day 1 Helm**; platform TLS is **Day 2 GitOps**.
+## Ingress + TLS (two steps)
 
 ```text
 GitOps sync                    Bootstrap (Helm)
@@ -75,36 +61,17 @@ ingress-nginx          →       (routing ready)
 cert-manager           →       CRDs + controller
 core-certificates      →       ClusterIssuer + Certificate → Secret argocd-server-tls
                                ↓ Certificate Ready
-./bootstrap/bootstrap.sh dev   → server.ingress enabled, secretName argocd-server-tls
+./bootstrap/bootstrap.sh       → ingress uses secretName argocd-server-tls
 ```
 
-1. Push and sync [gitops](../gitops/README.md) until **`kubectl get certificate -n argocd argocd-server-tls`** shows **Ready**.
-2. Re-run **`./bootstrap/bootstrap.sh dev`** so the dev overlay mounts that Secret on the ingress.
-
-Helm values live in **`argocd/values/base.yaml`** (shared ingress defaults, disabled by default) + **`overlays/<profile>.yaml`**. See [`argocd/values/overlays/README.md`](argocd/values/overlays/README.md).
-
-## Argo CD UI (dev)
-
-After GitOps sync + Certificate Ready + **`./bootstrap/bootstrap.sh dev`** (ingress in [`argocd/values/overlays/dev.yaml`](argocd/values/overlays/dev.yaml)):
-
-**https://argocd.dev:8443** — add `127.0.0.1 argocd.dev` to `/etc/hosts`.
-
-Until then, port-forward:
+**https://argocd.dev:8443** — add `127.0.0.1 argocd.dev` to `/etc/hosts`. Until the cert is Ready, port-forward:
 
 ```bash
 kubectl port-forward svc/argocd-server -n argocd 8888:80
 ```
 
-User **`admin`**. Optional **`ARGOCD_ADMIN_PASSWORD`** in `bootstrap.env` (patched after Helm). Otherwise:
+User **`admin`**. Optional **`ARGOCD_ADMIN_PASSWORD`** in `sensitive/bootstrap/bootstrap.env`. Otherwise:
 
 `kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath='{.data.password}' | base64 --decode; echo`
 
-[`../gitops/README.md`](../gitops/README.md) — push Git, **`./scripts/gitops/start.sh <profile>`**, verify **`core-certificates`**. Notes: [docs/bootstrap/](../docs/bootstrap/).
-
-## What stays in bootstrap (not GitOps)
-
-| Concern | Why |
-|---------|-----|
-| Argo CD Helm install | GitOps controller must exist before Applications |
-| Repo / repo-creds Secrets | Argo needs clone access before first sync |
-| Dev ingress **enable** + `secretName` | Chart is Day 1; TLS **material** comes from Day 2 `Certificate` — re-run bootstrap after cert is Ready |
+Day 2: [`../gitops/README.md`](../gitops/README.md) — `./scripts/gitops/start.sh <profile>`.

@@ -17,7 +17,7 @@ usage() {
   cat <<EOF
 Usage: $(basename "$0") [cluster]
 
-Day 0 (Kind) + kubeconfig + Day 1 (Argo CD overlay dev).
+Day 0 (Kind) + kubeconfig + Day 1 (Argo CD).
 Day 2: ./scripts/gitops/start.sh dev
 Safe to re-run.
 
@@ -33,7 +33,7 @@ if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
   usage
   exit 0
 fi
-# Historic: first arg "dev" meant the Day 1 overlay, not the Kind config id.
+# Historic: first arg "dev" was a Helm overlay (removed). Ignore it.
 if [[ "${1:-}" == "dev" ]]; then
   shift
 fi
@@ -63,9 +63,9 @@ KUBECONFIG_FILE="${K8S_PLAT_CLUSTER_KUBECONFIG}"
 source "$REPO_ROOT/scripts/lib/kubeconfig-setup.sh" "$KUBECONFIG_FILE"
 
 echo "==> Day 1: Bootstrap (Argo CD)"
-"$REPO_ROOT/bootstrap/bootstrap.sh" dev
+"$REPO_ROOT/bootstrap/bootstrap.sh"
 
 echo ""
-echo "Cluster ready (Kind + Argo overlay dev)."
+echo "Cluster ready (Kind + Argo CD)."
 echo "  Day 2: push gitops/, then ./scripts/gitops/start.sh dev"
 echo "  See gitops/README.md"

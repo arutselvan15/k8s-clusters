@@ -42,9 +42,9 @@ Kubeconfig path is the only required switch after Day 0: `sensitive/<platform>/<
 | `ec2` | `./scripts/infra/up.sh aws k8s-aws` | `./scripts/infra/kubeadm/up.sh aws k8s-aws` | `sensitive/<env>/<cluster_name>/kubeconfig` |
 | `openstack` | `./scripts/infra/up.sh openstack k8s-ocp` | `./scripts/infra/kubeadm/up.sh openstack k8s-ocp` | `sensitive/<env>/<cluster_name>/kubeconfig` |
 
-Day 1 / Day 2 currently use profile **`dev`**: `./bootstrap/bootstrap.sh dev`, `./scripts/gitops/start.sh dev`, `gitops/clusters/dev/`. That is the GitOps cluster name, not a second Kind cluster.
+Day 1 is `./bootstrap/bootstrap.sh`. Day 2 uses GitOps profile **`dev`**: `./scripts/gitops/start.sh dev`, `gitops/clusters/dev/`. That is the GitOps cluster name, not a second Kind cluster.
 
-Bootstrap pins: `bootstrap/env/defaults.env` + gitignored `bootstrap.env` (loaded in `install.sh` only).
+Bootstrap pins: `bootstrap/env/defaults.env` + gitignored `sensitive/bootstrap/bootstrap.env` (loaded in `install.sh` only).
 
 ## Shared workflow
 
@@ -54,7 +54,7 @@ Bootstrap pins: `bootstrap/env/defaults.env` + gitignored `bootstrap.env` (loade
 source scripts/lib/kubeconfig-setup.sh sensitive/<env>/<cluster_name>/kubeconfig
 
 # 2. Day 1 — same on every cluster
-./bootstrap/bootstrap.sh dev
+./bootstrap/bootstrap.sh
 
 # 3. Day 2 — same seed; apps live in gitops/
 git push origin main
@@ -63,7 +63,7 @@ git push origin main
 
 Kind-only shortcut for steps 1–2: `./scripts/bootstrap/up.sh`
 
-**Kind UI (after cert Ready):** `127.0.0.1 argocd.dev` in `/etc/hosts` → **https://argocd.dev:8443**. Re-run `./bootstrap/bootstrap.sh dev` when `argocd-server-tls` is Ready. See [bootstrap/README.md](../bootstrap/README.md) and [gitops/README.md](../gitops/README.md).
+**Kind UI (after cert Ready):** `127.0.0.1 argocd.dev` in `/etc/hosts` → **https://argocd.dev:8443**. Re-run `./bootstrap/bootstrap.sh` when `argocd-server-tls` is Ready. See [bootstrap/README.md](../bootstrap/README.md) and [gitops/README.md](../gitops/README.md).
 
 Teardown Day 0 only (`gitops/` and `bootstrap/` stay in Git). After destroy, the dispatcher prompts to push `sensitive/` to S3 with prune:
 
