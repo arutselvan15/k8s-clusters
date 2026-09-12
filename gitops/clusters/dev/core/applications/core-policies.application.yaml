@@ -1,0 +1,26 @@
+# Kyverno ClusterPolicies — gitops/clusters/dev/core/policies/ (not under core-apps path).
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: core-policies
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "35"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: core
+  source:
+    repoURL: https://github.com/arutselvan15/k8s-platform.git
+    targetRevision: HEAD
+    path: gitops/clusters/dev/core/policies
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kyverno
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true

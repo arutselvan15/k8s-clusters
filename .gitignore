@@ -1,2 +1,11 @@
 .kube/
 bootstrap/env/bootstrap.env
+infra/terraform/*
+# Terraform (aws-kubeadm lab)
+**/.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.tfstate.lock.info
+**/terraform.tfvars
+infra/terraform/aws-kubeadm/environments/aws-dev/.ssh/*.pem
+.idea

@@ -1,0 +1,16 @@
+# Kyverno — install CRDs with the chart (required before ClusterPolicy manifests).
+
+crds:
+  install: true
+
+admissionController:
+  replicas: 1
+
+backgroundController:
+  replicas: 1
+
+cleanupController:
+  replicas: 1
+
+reportsController:
+  replicas: 1

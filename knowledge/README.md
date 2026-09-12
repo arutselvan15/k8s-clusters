@@ -4,6 +4,8 @@ Personal learning journal tied to **this repo**. Operational runbooks stay in [`
 
 **Start here:** read the sequence below once, then follow the numbered guides in order.
 
+**Resuming AWS / assistant context:** [`00-continue-context.md`](./00-continue-context.md)
+
 ---
 
 ## Learning sequence (what first, what next)
@@ -74,6 +76,7 @@ When you finish a lab, update the **Repo status** row in the table above (e.g. â
 
 | File | Contents |
 |------|----------|
+| [00-continue-context.md](./00-continue-context.md) | Session decisions, what's done, how to resume |
 | [00-prerequisites.md](./00-prerequisites.md) | Tools, env files, profile naming |
 | [01-day0-cluster.md](./01-day0-cluster.md) | Kind, ports 8080/8443, kubeconfig |
 | [02-day1-bootstrap.md](./02-day1-bootstrap.md) | Argo CD install, secrets, what stays out of GitOps |
@@ -83,3 +86,15 @@ When you finish a lab, update the **Repo status** row in the table above (e.g. â
 | [06-argocd-ingress-tls.md](./06-argocd-ingress-tls.md) | Argo UI TLS + Helm ingress |
 | [storage.md](./storage.md) | Block vs file storage; planned Kind labs |
 | [08-whats-next.md](./08-whats-next.md) | Roadmap after storage |
+
+---
+
+## AWS track (Terraform + kubeadm)
+
+Separate from Kind steps 0â€“6. Do in order:
+
+| Guide | Contents |
+|-------|----------|
+| [09-aws-terraform-learning-path.md](./09-aws-terraform-learning-path.md) | Lessons AWS-0â€“7, Terraform in `infra/terraform/aws-kubeadm/` |
+| [10-aws-kubeadm-cluster.md](./10-aws-kubeadm-cluster.md) | Lessons K-1â€“K-4 on 2 EC2s |
+| [11-aws-platform-gitops.md](./11-aws-platform-gitops.md) | Argo/GitOps on AWS (planned) |

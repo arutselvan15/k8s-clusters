@@ -1,0 +1,19 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: disallow-latest-tag
+spec:
+  description: Assert ClusterPolicy disallow-latest-tag rejects :latest and allows pinned tags.
+  steps:
+    - try:
+        - apply:
+            file: namespace.yaml
+        - apply:
+            file: bad-deployment.yaml
+            expect:
+              - check:
+                  ($error != null): true
+        - apply:
+            file: good-deployment.yaml
+        - assert:
+            file: good-deployment.yaml

@@ -14,6 +14,7 @@ spec:
     - https://github.com/arutselvan15/k8s-platform.git
     - https://kubernetes.github.io/ingress-nginx
     - https://charts.jetstack.io
+    - https://kyverno.github.io/kyverno/
   destinations:
     - namespace: "*"
       server: https://kubernetes.default.svc

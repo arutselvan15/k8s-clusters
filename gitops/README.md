@@ -14,8 +14,9 @@ Full reference for this repo: concepts below, then step-by-step **Deploy dev cor
 | **Application (App of Apps)** | `core.application.yaml` → **`core-apps`** | Syncs **`core/applications/`**. Started by **`./scripts/gitops-start.sh <profile>`** (Day 2 — not bootstrap). |
 | **Application (platform app)** | `ingress-nginx.application.yaml` | Helm chart + values → target namespace. |
 | **Application (platform TLS)** | `core-certificates.application.yaml` | cert-manager CRs from **`core/certificates/`** (separate Git path, project **`core`**). |
+| **Application (platform policy)** | `core-policies.application.yaml` | Kyverno **ClusterPolicy** CRs from **`core/policies/`**. |
 
-**Analogy:** **`core-apps`** = register what runs (Applications + AppProject). **`core-certificates`** = deliver infra TLS. Certificate YAML lives under **`core/certificates/`** for organization but is **not** on the **`core-apps`** source path.
+**Analogy:** **`core-apps`** = register what runs (Applications + AppProject). **`core-certificates`** = deliver infra TLS. **`core-policies`** = admission policies. Certificate and policy YAML live under **`core/certificates/`** and **`core/policies/`** but are **not** on the **`core-apps`** source path.
 
 ---
 
@@ -34,19 +35,23 @@ You (once)                Argo CD                         Cluster
         ├── wave -1   AppProject "core"     (core.appproject.yaml)
         ├── wave 10   Application "ingress-nginx"
         ├── wave 20   Application "cert-manager"
-        └── wave 25   Application "core-certificates"
-                              │
-                              ▼
-                    source: gitops/clusters/dev/core/certificates/
-                    (ClusterIssuer, Certificate, …)
+        ├── wave 25   Application "core-certificates"
+        │             source: gitops/clusters/dev/core/certificates/
+        ├── wave 30   Application "kyverno"
+        │             Helm chart + gitops/apps/kyverno/values.yaml
+        └── wave 35   Application "core-policies"
+                      source: gitops/clusters/dev/core/policies/
 ```
 
 | Application | Git path | Argo UI resources |
 |-------------|----------|-------------------|
 | **`core-apps`** | `core/applications/` | AppProject **`core`** + child **Application** CRs only |
 | **`core-certificates`** | `core/certificates/` | **ClusterIssuer**, **Certificate**, future infra TLS |
+| **`core-policies`** | `core/policies/` | **ClusterPolicy** and other Kyverno policy CRs |
 
 **`gitops/apps/`** holds Helm **values** only. Child apps use multi-source `$values/gitops/apps/...`.
+
+**`gitops/chainsaw/`** holds [Kyverno Chainsaw](https://kyverno.github.io/chainsaw/) e2e tests for policies (not synced by Argo CD). See [`chainsaw/README.md`](chainsaw/README.md).
 
 ---
 
@@ -56,7 +61,10 @@ You (once)                Argo CD                         Cluster
 gitops/
 ├── apps/
 │   ├── ingress-nginx/values.yaml
-│   └── cert-manager/values.yaml
+│   ├── cert-manager/values.yaml
+│   └── kyverno/values.yaml
+├── chainsaw/                          # Chainsaw e2e tests (local/CI, not Argo)
+│   └── disallow-latest-tag/
 └── clusters/dev/
     ├── core.application.yaml          # seed → core-apps
     └── core/
@@ -64,10 +72,14 @@ gitops/
         │   ├── core.appproject.yaml
         │   ├── ingress-nginx.application.yaml
         │   ├── cert-manager.application.yaml
-        │   └── core-certificates.application.yaml
-        └── certificates/              # core-certificates source only
-            ├── clusterissuer-selfsigned.yaml
-            └── argocd-server-certificate.yaml
+        │   ├── core-certificates.application.yaml
+        │   ├── kyverno.application.yaml
+        │   └── core-policies.application.yaml
+        ├── certificates/              # core-certificates source only
+        │   ├── clusterissuer-selfsigned.yaml
+        │   └── argocd-server-certificate.yaml
+        └── policies/                  # core-policies source only
+            └── disallow-latest-tag.yaml
 ```
 
 ---
@@ -110,7 +122,7 @@ Do **not** hand-apply files under `core/applications/` or `core/certificates/`.
 
 ```bash
 kubectl get applications -n argocd
-# core-apps, ingress-nginx, cert-manager, core-certificates (Synced)
+# core-apps, ingress-nginx, cert-manager, core-certificates, kyverno, core-policies (Synced)
 kubectl get certificate -n argocd argocd-server-tls
 ```
 

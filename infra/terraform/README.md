@@ -14,6 +14,26 @@ Placeholder for cloud cluster provisioning (EKS, GKE, AKS, etc.).
 
 On a Mac, [`../kind/`](../kind/) stands in for Terraform: same **Day 0** slot, different tooling.
 
+**AWS kubeadm lab (Terraform):** [`aws-kubeadm/`](aws-kubeadm/) — 2× EC2 + learning path in [`../../knowledge/09-aws-terraform-learning-path.md`](../../knowledge/09-aws-terraform-learning-path.md).
+
+## Install Terraform
+
+Required for **aws-kubeadm** (not needed for Kind-only local work).
+
+**macOS (Homebrew):**
+
+```bash
+brew tap hashicorp/tap
+brew install hashicorp/tap/terraform
+terraform version
+```
+
+**Verify:** `terraform version` shows **>= 1.5** (matches [`aws-kubeadm/environments/aws-dev/versions.tf`](aws-kubeadm/environments/aws-dev/versions.tf)).
+
+**AWS CLI** (same lab): `brew install awscli`, then `aws configure` and `aws sts get-caller-identity`. See [Lesson AWS-0](../../knowledge/09-aws-terraform-learning-path.md#lesson-aws-0).
+
+Other platforms: [Install Terraform](https://developer.hashicorp.com/terraform/install) (HashiCorp docs).
+
 ## When you add Terraform
 
 Suggested layout:
