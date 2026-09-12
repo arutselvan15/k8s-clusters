@@ -14,13 +14,13 @@ bootstrap/bootstrap.sh [overlay]
                   ├── Helm: argo-cd chart (pin in defaults.env)
                   ├── apply repo-creds.*.yaml  (envsubst if ${VAR} present)
                   └── apply repo.*.yaml
-                  (GitOps seed: scripts/gitops-start.sh — separate from Day 1)
+                  (GitOps seed: scripts/gitops/start.sh — separate from Day 1)
 ```
 
 - **`bootstrap.sh`** — thin wrapper; does **not** load env (overlay optional, forwarded to `install.sh`).
 - **`argocd/install.sh`** — Day 1 implementation; **only** place that sources `env/load.sh`.
 
-Prerequisites on `PATH` for local one-shot: [`../scripts/require-tools.sh`](../scripts/require-tools.sh) (`kubectl`, `helm`, `envsubst`) — called from [`../scripts/kind-up.sh`](../scripts/kind-up.sh). Run Day 1 directly only after those tools are installed.
+Prerequisites on `PATH` for local one-shot: [`../scripts/lib/require-tools.sh`](../scripts/lib/require-tools.sh) (`kubectl`, `helm`, `envsubst`) — called from [`../scripts/bootstrap/up.sh`](../scripts/bootstrap/up.sh). After AWS/OpenStack kubeadm, source the matching kubeconfig and run `./bootstrap/bootstrap.sh` the same way. Run Day 1 directly only after those tools are installed.
 
 ## Configuration
 
@@ -42,13 +42,13 @@ Details: [`env/README.md`](env/README.md). Repo manifests: [`argocd/repos/README
 Kubeconfig (cluster targeting) is separate:
 
 ```bash
-source scripts/kubeconfig-setup.sh .kube/kind-dev.yaml
+source scripts/lib/kubeconfig-setup.sh .kube/kind-dev.yaml
 ```
 
 ## Run Day 1
 
 ```bash
-source scripts/kubeconfig-setup.sh .kube/kind-dev.yaml
+source scripts/lib/kubeconfig-setup.sh .kube/kind-dev.yaml
 ./bootstrap/bootstrap.sh dev          # or omit overlay → ARGOCD_OVERLAY / dev
 # equivalent: ./bootstrap/argocd/install.sh dev
 ```
@@ -92,7 +92,7 @@ User **`admin`**. Optional **`ARGOCD_ADMIN_PASSWORD`** in `bootstrap.env` (patch
 
 `kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath='{.data.password}' | base64 --decode; echo`
 
-[`../gitops/README.md`](../gitops/README.md) — push Git, **`./scripts/gitops-start.sh <profile>`**, verify **`core-certificates`**.
+[`../gitops/README.md`](../gitops/README.md) — push Git, **`./scripts/gitops/start.sh <profile>`**, verify **`core-certificates`**. Notes: [docs/bootstrap/](../docs/bootstrap/).
 
 ## What stays in bootstrap (not GitOps)
 

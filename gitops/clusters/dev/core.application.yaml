@@ -1,6 +1,6 @@
-# Seed Application for dev core platform — applied by scripts/gitops-start.sh (Day 2), not bootstrap.
+# Seed Application for dev core platform — applied by scripts/gitops/start.sh (Day 2), not bootstrap.
 #
-#   ./scripts/gitops-start.sh dev
+#   ./scripts/gitops/start.sh dev
 #
 # Creates Application "core-apps", which syncs gitops/clusters/dev/core/applications/.
 

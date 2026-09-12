@@ -11,7 +11,7 @@ Full reference for this repo: concepts below, then step-by-step **Deploy dev cor
 | Kind | Example in this repo | Purpose |
 |------|----------------------|---------|
 | **AppProject** | `applications/core.appproject.yaml` → AppProject **`core`** | **Policy** for platform apps. Synced by **`core-apps`** (wave `-1`). |
-| **Application (App of Apps)** | `core.application.yaml` → **`core-apps`** | Syncs **`core/applications/`**. Started by **`./scripts/gitops-start.sh <profile>`** (Day 2 — not bootstrap). |
+| **Application (App of Apps)** | `core.application.yaml` → **`core-apps`** | Syncs **`core/applications/`**. Started by **`./scripts/gitops/start.sh <profile>`** (Day 2 — not bootstrap). |
 | **Application (platform app)** | `ingress-nginx.application.yaml` | Helm chart + values → target namespace. |
 | **Application (platform TLS)** | `core-certificates.application.yaml` | cert-manager CRs from **`core/certificates/`** (separate Git path, project **`core`**). |
 | **Application (platform policy)** | `core-policies.application.yaml` | Kyverno **ClusterPolicy** CRs from **`core/policies/`**. |
@@ -25,7 +25,7 @@ Full reference for this repo: concepts below, then step-by-step **Deploy dev cor
 ```text
 You (once)                Argo CD                         Cluster
 ─────────                 ───────                         ───────
-./scripts/gitops-start.sh dev
+./scripts/gitops/start.sh dev
         │
         ▼
                     Application "core-apps"
@@ -86,9 +86,9 @@ gitops/
 
 ## Prerequisites
 
-1. **Day 1 done** — Argo CD running (`./scripts/kind-up.sh dev` or `./bootstrap/bootstrap.sh`).
+1. **Day 1 done** — Argo CD running (`./scripts/bootstrap/up.sh`, or `./scripts/infra/up.sh kind` then `./bootstrap/bootstrap.sh dev`).
 2. **Git repo registered** — `argocd/install.sh` applies repo Secrets ([`../bootstrap/env/`](../bootstrap/env/)).
-3. **`KUBECONFIG`** set ([`../scripts/kubeconfig-setup.sh`](../scripts/kubeconfig-setup.sh)).
+3. **`KUBECONFIG`** set ([`../scripts/lib/kubeconfig-setup.sh`](../scripts/lib/kubeconfig-setup.sh)).
 4. **Push to Git** — Argo clones remote, not your working tree.
 
 ---
@@ -110,8 +110,8 @@ git push
 ### 3. Start GitOps (Day 2)
 
 ```bash
-source scripts/kubeconfig-setup.sh .kube/kind-dev.yaml
-./scripts/gitops-start.sh dev
+source scripts/lib/kubeconfig-setup.sh .kube/kind-dev.yaml
+./scripts/gitops/start.sh dev
 ```
 
 Equivalent: `kubectl apply -f gitops/clusters/dev/core.application.yaml`. Safe to re-run.
@@ -171,6 +171,6 @@ Do not add cert YAML under **`applications/`**. Use **`core-certificates`** → 
 |--------|----------------|
 | Cluster (Day 0) | Kind / Terraform |
 | Argo CD (Day 1) | `bootstrap.sh` → `argocd/install.sh` |
-| Seed **`core-apps`** | [`../scripts/gitops-start.sh`](../scripts/gitops-start.sh) `<profile>` |
+| Seed **`core-apps`** | [`../scripts/gitops/start.sh`](../scripts/gitops/start.sh) `<profile>` |
 
-See also: [`../docs/platform-lifecycle.md`](../docs/platform-lifecycle.md), [Day 1 bootstrap](../bootstrap/README.md).
+See also: [`../docs/README.md`](../docs/README.md), [`../docs/platform-lifecycle.md`](../docs/platform-lifecycle.md), [Day 1 bootstrap](../bootstrap/README.md), [GitOps notes](../docs/gitops/).

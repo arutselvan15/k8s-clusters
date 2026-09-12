@@ -19,4 +19,4 @@ cp bootstrap/env/bootstrap.env.example bootstrap/env/bootstrap.env
 
 Overlay resolution (in `install.sh`): CLI argument → `ARGOCD_OVERLAY` from env → `dev`.
 
-Kubeconfig is not stored here — use `source scripts/kubeconfig-setup.sh <file>`.
+Kubeconfig is not stored here — use `source scripts/lib/kubeconfig-setup.sh <file>`.

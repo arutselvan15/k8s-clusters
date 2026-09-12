@@ -1,11 +1,21 @@
 .kube/
 bootstrap/env/bootstrap.env
-infra/terraform/*
-# Terraform (aws-kubeadm lab)
+.idea
+
+# Terraform runtime (keep *.tf and STEPS.md tracked)
 **/.terraform/
 *.tfstate
 *.tfstate.*
 .terraform.tfstate.lock.info
-**/terraform.tfvars
-infra/terraform/aws-kubeadm/environments/aws-dev/.ssh/*.pem
-.idea
+crash.log
+*.tfplan
+terraform.tfvars
+
+# Cloud secrets and generated keys (never commit)
+.aws/credentials
+.aws/config
+.aws/*.pem
+.aws/known_hosts
+.openstack/clouds.yaml
+.openstack/config
+.openstack/*.pem

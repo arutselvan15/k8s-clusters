@@ -106,7 +106,7 @@ Overlays: dev, stg, prod (values/overlays/). Default: \$ARGOCD_OVERLAY or dev.
 Chart: argo/argo-cd ${ARGO_CD_CHART_VERSION}
 
 After Helm: repo-creds (from bootstrap/env) then repos/ (see repos/README.md).
-GitOps (core-apps seed): ./scripts/gitops-start.sh <profile> — not part of bootstrap.
+GitOps (core-apps seed): ./scripts/gitops/start.sh <profile> — not part of bootstrap.
 
 Environment: bootstrap/env/defaults.env + optional bootstrap/env/bootstrap.env
 Optional: ARGOCD_ADMIN_PASSWORD in bootstrap.env (patched after Helm; omitted if unset)

@@ -1,0 +1,28 @@
+# Copy to clouds.yaml (gitignored). Never commit real passwords or app-cred secrets.
+#   cp .openstack/clouds.yaml.example .openstack/clouds.yaml
+#   chmod 600 .openstack/clouds.yaml
+#
+# Terraform and the OpenStack CLI read this via OS_CLIENT_CONFIG_FILE.
+# The cloud name must match `cloud =` in .openstack/config (default: lab).
+
+clouds:
+  lab:
+    auth:
+      auth_url: https://KEYSTONE.example:5000
+      username: REPLACE_ME
+      password: REPLACE_ME
+      project_name: REPLACE_ME
+      user_domain_name: Default
+      project_domain_name: Default
+    region_name: RegionOne
+    interface: public
+    identity_api_version: 3
+    # verify: true
+    # cacert: /path/to/ca.pem
+
+    # Application credentials instead of username/password:
+    # auth:
+    #   auth_url: https://KEYSTONE.example:5000
+    #   application_credential_id: REPLACE_ME
+    #   application_credential_secret: REPLACE_ME
+    # auth_type: v3applicationcredential

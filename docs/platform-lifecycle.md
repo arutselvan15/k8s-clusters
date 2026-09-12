@@ -1,84 +1,80 @@
 # Platform lifecycle
 
-Reference model for Kubernetes platform engineering. Same layout applies to a home lab (Kind) and to enterprise cloud (Terraform).
-
-## Phases
+One platform, three ways to get a cluster. **Bootstrap and GitOps are reused.**
 
 ```text
-Day 0  infra/          Cluster exists (API reachable)
-         ↓
-Day 1  bootstrap/      GitOps controller (Argo CD) + repo Secrets
-         ↓
-Day 2  gitops/          Everything else from Git
+┌─────────────────────────────────────────────────────────┐
+│  Day 0  infra/     kind  ·  aws (ec2)  ·  openstack     │  env-specific
+└────────────────────────────┬────────────────────────────┘
+                             ▼
+┌─────────────────────────────────────────────────────────┐
+│  Day 1  bootstrap/     Argo CD + Git repo Secrets       │  common
+└────────────────────────────┬────────────────────────────┘
+                             ▼
+┌─────────────────────────────────────────────────────────┐
+│  Day 2  gitops/        Apps from Git (keeps growing)    │  common
+└─────────────────────────────────────────────────────────┘
 ```
 
-| Phase | Question answered | Tools in this repo |
-|-------|-------------------|-------------------|
-| **Day 0** | Do we have a cluster? | `infra/terraform/` (placeholder), `infra/kind/` (local) |
-| **Day 1** | Can we manage the cluster via Git? | `bootstrap/bootstrap.sh` → `bootstrap/argocd/install.sh` |
-| **Day 2** | What runs on the cluster? | `gitops/` + [`scripts/gitops-start.sh`](../scripts/gitops-start.sh) |
+Index: [README.md](./README.md) · Resume: [continue.md](./continue.md)
+
+## What each layer owns
+
+| Phase | Question | What is reusable | What varies |
+|-------|----------|------------------|-------------|
+| **Day 0** | Is there a cluster? | Dispatcher `scripts/infra/up.sh`; kubeadm scripts for VMs | Terraform env: Kind vs EC2 vs OpenStack |
+| **Day 1** | Can Git manage the cluster? | `bootstrap/` — same Helm install and repo Secrets | Overlay values (hostname, ingress) if a cluster needs them |
+| **Day 2** | What runs on the cluster? | `gitops/` apps, App of Apps, sync waves | Cluster folder / Helm values (e.g. Kind `hostPort` vs cloud `LoadBalancer`) |
+
+Kubeconfig path is the only required switch after Day 0: `.kube/kind-dev.yaml`, `.kube/aws-dev.yaml`, or `.kube/os-dev.yaml`.
 
 ## What does not belong where
 
-- **Day 0:** VPC, cluster, node pools — not Argo CD, not ingress.
-- **Day 1:** Argo CD Helm install, Argo CD repo / repo-creds Secrets — not cert-manager or app stacks.
-- **Day 2:** Ingress, cert-manager, **core-certificates** (platform TLS CRs), monitoring, policies, team apps — not `kind create` or cluster Terraform.
+- **Day 0:** VMs, VPC, Kind cluster, kubeadm — not Argo CD, not ingress, not apps.
+- **Day 1:** Argo CD Helm release and clone credentials — not cert-manager, not app stacks.
+- **Day 2:** Every platform app (ingress, cert-manager, certificates, Kyverno, later storage, observability, …) — not Terraform, not `kind create`.
 
-## Environment names
+## Environments (Day 0)
 
-Use **dev**, **stg**, and **prod** consistently:
+| Environment | Dispatcher | After Terraform | Kubeconfig |
+|-------------|------------|-----------------|------------|
+| `kind` | `./scripts/infra/up.sh kind` | Cluster is ready | `.kube/kind-dev.yaml` |
+| `ec2` | `./scripts/infra/up.sh aws` | `./scripts/infra/kubeadm/up.sh` | `.kube/aws-dev.yaml` |
+| `openstack` | `./scripts/infra/up.sh openstack` | `./scripts/infra/kubeadm/up.sh -i .kube/os-inventory.env` | `.kube/os-dev.yaml` |
 
-- Kind configs: `infra/kind/<profile>-cluster.yaml`
-- Kubeconfig: `.kube/kind-<profile>.yaml` (Kind); `source scripts/kubeconfig-setup.sh <path>`
-- Argo CD Helm overlay: same profile name passed to `bootstrap.sh` / `install.sh`
-- GitOps: `gitops/clusters/<profile>/`
+Day 1 / Day 2 currently use profile **`dev`**: `./bootstrap/bootstrap.sh dev`, `./scripts/gitops/start.sh dev`, `gitops/clusters/dev/`. That is the GitOps cluster name, not a second Kind cluster.
 
-Bootstrap pins and secrets: `bootstrap/env/defaults.env` + gitignored `bootstrap.env` (loaded in `install.sh` only).
+Bootstrap pins: `bootstrap/env/defaults.env` + gitignored `bootstrap.env` (loaded in `install.sh` only).
 
-## Local workflow (macOS)
-
-Kind — Day 0 + Day 1 only:
-
-```bash
-./scripts/kind-up.sh dev
-```
-
-Day 2 (after push to Git):
+## Shared workflow
 
 ```bash
-source scripts/kubeconfig-setup.sh .kube/kind-dev.yaml
-./scripts/gitops-start.sh dev
-```
+# 1. Day 0 — one environment
+./scripts/infra/up.sh kind          # or aws | openstack (+ kubeadm on VMs)
+source scripts/lib/kubeconfig-setup.sh .kube/<kubeconfig>.yaml
 
-Manual (full order):
-
-```bash
-./scripts/require-tools.sh kubectl helm envsubst
-./infra/kind/setup.sh dev
-source scripts/kubeconfig-setup.sh .kube/kind-dev.yaml
+# 2. Day 1 — same on every cluster
 ./bootstrap/bootstrap.sh dev
-git push   # gitops on GitHub
-./scripts/gitops-start.sh dev
+
+# 3. Day 2 — same seed; apps live in gitops/
+git push origin main
+./scripts/gitops/start.sh dev
 ```
 
-**Dev UI:** `127.0.0.1 argocd.dev` in `/etc/hosts` → **https://argocd.dev:8443** (Kind node port 8443). See [bootstrap/README.md](../bootstrap/README.md) and [gitops/README.md](../gitops/README.md).
+Kind-only shortcut for steps 1–2: `./scripts/bootstrap/up.sh`
 
-Teardown Day 0 only:
+**Kind UI (after cert Ready):** `127.0.0.1 argocd.dev` in `/etc/hosts` → **https://argocd.dev:8443**. Re-run `./bootstrap/bootstrap.sh dev` when `argocd-server-tls` is Ready. See [bootstrap/README.md](../bootstrap/README.md) and [gitops/README.md](../gitops/README.md).
+
+Teardown Day 0 only (`gitops/` and `bootstrap/` stay in Git):
 
 ```bash
-./infra/kind/destroy.sh dev
+./scripts/infra/down.sh kind
+./scripts/infra/down.sh aws -y
+./scripts/infra/down.sh openstack -y   # does not delete the existing tenant network
 ```
 
-## Cloud workflow (Terraform)
+OpenStack Terraform **looks up** `network_name`; destroy does **not** delete that network.
 
-Day 0 backend differs; **kubeconfig setup + bootstrap stay the same**.
+## Adding the next app
 
-```text
-1. terraform apply (infra/terraform/environments/<profile>)
-2. kubeconfig path (e.g. .kube/<profile>.yaml)
-3. source scripts/kubeconfig-setup.sh <that-path>
-4. ./bootstrap/bootstrap.sh <overlay>
-5. ./scripts/gitops-start.sh <profile>   # after gitops push
-```
-
-Shared scripts: `kubeconfig-setup.sh`, `require-tools.sh`, `bootstrap/`.
+GitOps is the growth path. Pattern: [gitops/](./gitops/) — values under `gitops/apps/<name>/`, Application under `gitops/clusters/dev/core/applications/`, push, let Argo sync. Do not add a second bootstrap or a cloud-specific GitOps tree for each new component.

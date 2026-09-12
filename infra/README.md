@@ -1,68 +1,76 @@
 # Day 0 — Infrastructure
 
-Provision a Kubernetes cluster. Nothing in this layer installs platform applications or GitOps controllers.
+Provision a Kubernetes cluster with **Terraform only**. Nothing here installs Argo CD, ingress, or other platform apps.
 
-## Contents
-
-| Path | Purpose |
-|------|---------|
-| [`terraform/`](terraform/) | Cloud IaC placeholder (EKS/GKE/AKS) |
-| [`kind/`](kind/) | Local Kind clusters for learning on macOS |
-
-## Profiles
-
-Use the same environment names everywhere: **dev**, **stg**, **prod**.
-
-| Profile | Kind cluster name | Kubeconfig file (repo) | Ingress (host HTTP / HTTPS) |
-|---------|-------------------|------------------------|-----------------------------|
-| dev     | `dev`             | `.kube/kind-dev.yaml`  | 8080 / 8443                 |
-| stg     | `stg`             | `.kube/kind-stg.yaml`  | 9080 / 9443                 |
-| prod    | `prod`            | `.kube/kind-prod.yaml` | 80 / 443                    |
-
-After `./setup.sh <profile>`, the kubeconfig is at `.kube/kind-<profile>.yaml` (from `kind get kubeconfig`). Do not name the Kind cluster `kind-dev` or the context inside the file becomes `kind-kind-dev`.
-
-## Kind — create cluster
-
-```bash
-cd infra/kind
-chmod +x setup.sh destroy.sh
-./setup.sh dev
+```text
+infra/terraform/
+├── modules/cluster-kind/
+└── environments/
+    ├── kind/            # local Kind
+    ├── ec2/             # AWS VMs → kubeadm
+    └── openstack/       # OpenStack VMs → kubeadm
 ```
 
-Re-running `./setup.sh dev` is safe if the cluster already exists; it refreshes the kubeconfig file.
-
-## Kind — kubeconfig + verify
-
-From the repo root (after `setup.sh`):
-
 ```bash
-source scripts/kubeconfig-setup.sh .kube/kind-dev.yaml
+./scripts/infra/up.sh kind
+./scripts/infra/up.sh aws
+./scripts/infra/up.sh openstack
 ```
 
-Or use the one-shot wrapper: [`../../scripts/kind-up.sh`](../../scripts/kind-up.sh).
+## Environments
 
-## Kind — destroy cluster
+| Environment | What Terraform creates | Kubeconfig |
+|-------------|------------------------|------------|
+| [`terraform/environments/kind`](terraform/environments/kind/) | Kind cluster `dev`, host ports 8080/8443 | `.kube/kind-dev.yaml` |
+| [`terraform/environments/ec2`](terraform/environments/ec2/) | VPC, SG, EC2, SSH key ([STEPS.md](terraform/environments/ec2/STEPS.md)) | `.kube/aws-dev.yaml` after kubeadm |
+| [`terraform/environments/openstack`](terraform/environments/openstack/) | Ports, VMs on an existing Neutron net ([STEPS.md](terraform/environments/openstack/STEPS.md)) | `.kube/os-dev.yaml` after kubeadm |
+
+kubeadm is **not** Terraform. After `./scripts/infra/up.sh aws` or `openstack`, run `./scripts/infra/kubeadm/up.sh` (OpenStack: `-i .kube/os-inventory.env`).
+
+Kind cluster name is **`dev`** (not `kind-dev`) so the kubeconfig context stays readable.
+
+## Kind
 
 ```bash
-./destroy.sh dev
+./scripts/infra/up.sh kind
+source scripts/lib/kubeconfig-setup.sh .kube/kind-dev.yaml
 ```
 
-Also removes `.kube/kind-dev.yaml`.
+Re-apply is safe. **Day 0 + Day 1:** `./scripts/bootstrap/up.sh`
+
+Teardown: `./scripts/infra/down.sh kind`
+
+## AWS / OpenStack
+
+```bash
+./scripts/infra/up.sh aws && ./scripts/infra/kubeadm/up.sh
+source scripts/lib/kubeconfig-setup.sh .kube/aws-dev.yaml
+
+./scripts/infra/up.sh openstack && ./scripts/infra/kubeadm/up.sh -i .kube/os-inventory.env
+source scripts/lib/kubeconfig-setup.sh .kube/os-dev.yaml
+```
+
+AWS: `.aws/credentials` + `.aws/config` (gitignored).  
+OpenStack: `.openstack/clouds.yaml` + `.openstack/config` (gitignored). Terraform **looks up** `network_name`; it does not create or destroy that network.
+
+Teardown: `./scripts/infra/down.sh aws -y` / `./scripts/infra/down.sh openstack -y`
 
 ## Prerequisites
 
 ```bash
-brew install kind kubectl helm gettext   # envsubst from gettext
-brew link --force gettext                 # if envsubst not on PATH
+brew install kind kubectl helm gettext terraform
+brew link --force gettext
 ```
 
-Or run [`../scripts/require-tools.sh`](../scripts/require-tools.sh) before Day 1 — `kind-up.sh` checks `kubectl helm envsubst` automatically.
+`./scripts/lib/require-tools.sh terraform kubectl kind` (Kind) or `terraform aws` (EC2).
 
-## Next
-
-Load kubeconfig, then [Day 1 bootstrap](../bootstrap/README.md):
+## Next (Day 1)
 
 ```bash
-source scripts/kubeconfig-setup.sh .kube/kind-dev.yaml
+source scripts/lib/kubeconfig-setup.sh .kube/kind-dev.yaml
 ./bootstrap/bootstrap.sh dev
 ```
+
+## Docs
+
+[docs/README.md](../docs/README.md) · Day 0 guides: [docs/infra/](../docs/infra/) · Then common [bootstrap](../docs/bootstrap/) and [gitops](../docs/gitops/)

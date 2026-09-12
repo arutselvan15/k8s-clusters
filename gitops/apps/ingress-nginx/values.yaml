@@ -1,4 +1,4 @@
-# Kind dev: hostPort 80/443 on the node matches infra/kind/*-cluster.yaml extraPortMappings
+# Kind: hostPort 80/443 on the node matches environments/kind extra_port_mappings
 # (host 8080/8443 → container 80/443).
 
 controller:

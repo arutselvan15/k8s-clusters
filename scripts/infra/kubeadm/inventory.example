@@ -1,0 +1,17 @@
+# Copy to .kube/aws-inventory.env or .kube/os-inventory.env (gitignored) or pass -i.
+# kubeadm/up.sh reads this file only — no Terraform, no cloud keys.
+#
+#   cp scripts/infra/kubeadm/inventory.example .kube/aws-inventory.env
+#   ./scripts/infra/kubeadm/up.sh
+#   ./scripts/infra/kubeadm/up.sh -i .kube/os-inventory.env
+#
+# WORKER_HOSTS is space-separated (zero or more). aws/up.sh and openstack/up.sh write this after apply.
+
+SSH_USER=ubuntu
+SSH_KEY=.aws/k8s-aws-ssh.pem
+CONTROL_PLANE_HOST=REPLACE_ME
+CONTROL_PLANE_ENDPOINT=REPLACE_ME
+WORKER_HOSTS=REPLACE_ME
+K8S_VERSION=1.32
+POD_CIDR=192.168.0.0/16
+KUBECONFIG_FILE=.kube/aws-dev.yaml
