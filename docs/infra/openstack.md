@@ -27,6 +27,8 @@ Set `octavia_lbs` in the cluster YAML: each list item is one Octavia VIP (TCP 80
 
 **Tear down compute:** `./scripts/infra/down.sh openstack k8s-ocp -y` deletes VMs, ports, security group, keypair, and the Octavia LB if it was enabled. **It does not delete the existing network.** Kubernetes only (keep VMs): `./scripts/infra/kubeadm/reset.sh openstack k8s-ocp`.
 
+**Tear down compute:** `./scripts/infra/down.sh openstack k8s-ocp -y` deletes VMs, ports, security group, keypair, and the Octavia LB if it was enabled. **It does not delete the existing network.** Kubernetes only (keep VMs): `./scripts/infra/kubeadm/reset.sh openstack k8s-ocp`.
+
 **Done when (compute):** SSH to a node works. Kubernetes Ready is a separate step ([kubeadm.md](./kubeadm.md)).
 
 ---
