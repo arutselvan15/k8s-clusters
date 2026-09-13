@@ -1,5 +1,0 @@
-# cert-manager — install CRDs with the chart (required for Issuer/Certificate).
-
-crds:
-  enabled: true
-  keep: true

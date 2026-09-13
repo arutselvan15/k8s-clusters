@@ -4,5 +4,10 @@
 # Provider cache next to the .tf files (not in sensitive/)
 **/.terraform/
 
-# sensitive/ — secrets + outputs (S3). clusters/ is committed.
-# sensitive/**
+# Secrets + Terraform outputs (S3). Keep README and *.example.
+sensitive/**
+!sensitive/README.md
+!sensitive/aws/
+!sensitive/aws/*.example
+!sensitive/openstack/
+!sensitive/openstack/*.example

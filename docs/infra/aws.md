@@ -1,6 +1,6 @@
 # Day 0 — AWS (Terraform)
 
-**Goal:** Create EC2 VMs with **Terraform**, then install Kubernetes with **kubeadm** ([aws-kubeadm.md](./aws-kubeadm.md)). After nodes are Ready, use the **same** [bootstrap](../bootstrap/) and [gitops](../gitops/) as Kind.
+**Goal:** Create EC2 VMs with **Terraform**, then install Kubernetes with **kubeadm** ([aws-kubeadm.md](./aws-kubeadm.md)). After nodes are Ready, use the **same** [k8s-gitops](../../../k8s-gitops) bootstrap and GitOps as Kind.
 
 This is one Day 0 environment. It is not a separate platform.
 
@@ -37,7 +37,7 @@ infra/terraform/environments/ec2/
 | [AWS-6](#lesson-aws-6) Worker EC2 | ☐ |
 | [AWS-7](#lesson-aws-7) Outputs & SSH | ☐ |
 | [K-1–K-4](./aws-kubeadm.md) kubeadm cluster | ☐ |
-| Common Day 1–2 ([bootstrap](../bootstrap/) · [gitops](../gitops/)) | ☐ |
+| Common Day 1–2 ([k8s-gitops](../../../k8s-gitops)) | ☐ |
 | [AWS-15](#lesson-aws-15) Teardown | ☐ |
 
 The current `main.tf` applies **all** of AWS-1–7 in one `./scripts/infra/up.sh aws k8s-aws`. Read STEPS.md as you go so you still learn each object. Incremental `-target` is optional.
@@ -178,7 +178,7 @@ terraform -chdir=infra/terraform/environments/ec2 output
 
 `./scripts/infra/up.sh aws k8s-aws` writes `sensitive/aws/k8s-aws/cluster.env` (gitignored) for kubeadm.
 
-**Next:** [aws-kubeadm.md](./aws-kubeadm.md) — automated `./scripts/infra/kubeadm/up.sh` or manual K-1–K-4. Then [bootstrap](../bootstrap/) and [gitops](../gitops/).
+**Next:** [aws-kubeadm.md](./aws-kubeadm.md) — automated `./scripts/infra/kubeadm/up.sh` or manual K-1–K-4. Then [k8s-gitops](../../../k8s-gitops).
 
 ---
 

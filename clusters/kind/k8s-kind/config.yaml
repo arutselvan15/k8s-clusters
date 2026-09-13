@@ -11,6 +11,6 @@ terraform:
   control_plane_nodes: 1
   # Control-plane only for the laptop lab.
   worker_nodes: 0
-  # Ingress on the first control-plane node (Argo UI https://argocd.dev:8443).
+  # Host ports for ingress (Kind maps these to container 80/443).
   http_host_port: 8080
   https_host_port: 8443

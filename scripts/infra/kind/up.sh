@@ -63,7 +63,6 @@ k8s_plat_load_kind_vars
 
 echo "==> Kind: ${ENV_DIR}"
 "$REPO_ROOT/scripts/lib/require-tools.sh" terraform kubectl kind
-k8s_plat_migrate_to_sensitive
 k8s_plat_prepare_kind_runtime
 
 cd "$ENV_DIR"
@@ -78,5 +77,4 @@ echo "Cluster ready: ${CLUSTER_NAME} (kind)"
 echo "  export KUBECONFIG=${KUBECONFIG_FILE}"
 echo "  kubectl get nodes"
 echo "  source ${REPO_ROOT}/scripts/lib/kubeconfig-setup.sh ${KUBECONFIG_FILE}"
-echo "  Day 1: ${REPO_ROOT}/bootstrap/bootstrap.sh"
-echo "  Or Day 0+1: ${REPO_ROOT}/scripts/bootstrap/up.sh"
+echo "  Day 1 (k8s-gitops): ${REPO_ROOT}/../k8s-gitops/bootstrap/bootstrap.sh"

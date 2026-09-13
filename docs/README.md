@@ -1,14 +1,12 @@
 # Docs
 
-Reusable platform: **infra changes per environment**; **bootstrap and GitOps stay the same**.
+**This repo** is Day 0 (a Kubernetes API). Argo CD and apps are **[k8s-gitops](../../k8s-gitops)**.
 
 ```text
-Day 0   infra/        kind | aws (ec2) | openstack     ← env-specific
-Day 1   bootstrap/    Argo CD + repo access            ← common
-Day 2   gitops/       platform apps from Git           ← common, grows
+Day 0   infra/        kind | aws (ec2) | openstack     ← this repo
+Day 1   bootstrap/    Argo CD + repo access            ← k8s-gitops
+Day 2   gitops/       platform apps from Git           ← k8s-gitops
 ```
-
-After any Day 0 cluster is up, point `KUBECONFIG` at it and run the **same** Day 1 and Day 2 commands. GitOps is the catalog of apps; add a new app there once and every environment can sync it.
 
 **Resume:** [continue.md](./continue.md)
 
@@ -18,9 +16,7 @@ docs/
 ├── continue.md
 ├── platform-lifecycle.md
 ├── prerequisites.md
-├── infra/                 # Day 0 — pick an environment
-├── bootstrap/             # Day 1 — common
-└── gitops/                # Day 2 — common apps
+└── infra/                 # Day 0 — pick an environment
 ```
 
 | If you need… | Read |
@@ -29,31 +25,25 @@ docs/
 | Tools and kubeconfig habit | [prerequisites.md](./prerequisites.md) |
 | Build a cluster | [infra/](./infra/) — Kind, AWS EC2, or OpenStack |
 | Lab inputs vs generated outputs | [clusters/README.md](../clusters/README.md) · [sensitive/README.md](../sensitive/README.md) |
-| Install Argo CD | [bootstrap/](./bootstrap/) |
-| Platform apps (ingress, certs, policy, …) | [gitops/](./gitops/) |
-| Commands next to the code | [scripts/README.md](../scripts/README.md), [infra/README.md](../infra/README.md), [bootstrap/README.md](../bootstrap/README.md), [gitops/README.md](../gitops/README.md) |
+| Install Argo CD / apps | [k8s-gitops](../../k8s-gitops) |
 
 ---
 
-## One flow, three environments
+## One flow, two repos
 
 ```bash
-# Day 0 — choose one
+# Day 0 — this repo
 ./scripts/infra/up.sh kind
 ./scripts/infra/up.sh aws k8s-aws        && ./scripts/infra/kubeadm/up.sh aws k8s-aws
 ./scripts/infra/up.sh openstack k8s-ocp  && ./scripts/infra/kubeadm/up.sh openstack k8s-ocp
 
-# Same from here on (kubeconfig path is the only difference)
-source scripts/lib/kubeconfig-setup.sh sensitive/kind/<cluster_name>/kubeconfig   # or sensitive/<env>/<cluster_name>/kubeconfig
+source scripts/lib/kubeconfig-setup.sh sensitive/kind/<cluster_name>/kubeconfig
+
+# Day 1–2 — k8s-gitops
+cd ../k8s-gitops
 ./bootstrap/bootstrap.sh
 git push origin main
 ./scripts/gitops/start.sh dev
 ```
 
-Kind convenience (Day 0 Kind + Day 1): `./scripts/bootstrap/up.sh`
-
----
-
-## GitOps grows here
-
-Do **not** fork bootstrap or GitOps per cloud. New platform software is another Application under `gitops/` (values + Application YAML + sync-wave). Current apps and how to add the next one: [gitops/](./gitops/).
+Day 1–2: **[k8s-gitops](../../k8s-gitops)**.

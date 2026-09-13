@@ -1,6 +1,6 @@
 # Day 0 — Infrastructure
 
-Provision a Kubernetes **API**. This tree is Terraform only. Argo CD and apps are [bootstrap](../bootstrap/README.md) and [gitops](../gitops/README.md).
+Provision a Kubernetes **API**. This tree is Terraform only. Argo CD and apps are in **[k8s-gitops](../../k8s-gitops)**.
 
 ```text
 infra/terraform/
@@ -20,11 +20,11 @@ Commands: [`../scripts/infra/`](../scripts/README.md). Inputs: [`../clusters/`](
 source scripts/lib/kubeconfig-setup.sh sensitive/kind/<cluster_name>/kubeconfig
 ```
 
-Knobs: [`../clusters/kind/dev/config.yaml`](../clusters/kind/dev/config.yaml) (`cluster_name: dev`). `./scripts/infra/up.sh kind` is the same as `./scripts/infra/up.sh kind dev`.
+Knobs: [`../clusters/kind/k8s-kind/config.yaml`](../clusters/kind/k8s-kind/config.yaml). `./scripts/infra/up.sh kind` is the same as `./scripts/infra/up.sh kind k8s-kind`.
 
-Day 0 + Day 1: `./scripts/bootstrap/up.sh`. Teardown: `./scripts/infra/down.sh kind`
+Teardown: `./scripts/infra/down.sh kind`
 
-Host ports **8080 → 80** and **8443 → 443**. Cluster name is **`dev`**.
+Host ports **8080 → 80** and **8443 → 443**.
 
 ## AWS
 
@@ -60,7 +60,7 @@ S3 backup of `sensitive/` is offered by `./scripts/infra/up.sh` and `./scripts/i
 
 ```bash
 source scripts/lib/kubeconfig-setup.sh sensitive/kind/<cluster_name>/kubeconfig   # or aws / openstack path above
-./bootstrap/bootstrap.sh
+../k8s-gitops/bootstrap/bootstrap.sh
 ```
 
-Guides: [docs/infra/](../docs/infra/)
+Guides: [docs/infra/](../docs/infra/) · GitOps: [k8s-gitops](../../k8s-gitops)

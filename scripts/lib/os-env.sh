@@ -11,12 +11,7 @@ source "${REPO_ROOT}/scripts/lib/cluster-config.sh"
 
 export OS_CLIENT_CONFIG_FILE="${K8S_PLAT_OS_CLOUDS}"
 
-k8s_plat_os_config_get() {
-  k8s_plat_yaml_get "${K8S_PLAT_CLUSTER_CONFIG}" "$1"
-}
-
 k8s_plat_require_os_credentials() {
-  k8s_plat_migrate_to_sensitive
   mkdir -p "${K8S_PLAT_SENSITIVE_DIR}/openstack"
 
   if [[ ! -f "${OS_CLIENT_CONFIG_FILE}" ]]; then
@@ -26,7 +21,7 @@ k8s_plat_require_os_credentials() {
       echo "==> Copied ~/.config/openstack/clouds.yaml -> ${OS_CLIENT_CONFIG_FILE} (gitignored)"
     else
       echo "Missing ${OS_CLIENT_CONFIG_FILE}" >&2
-      echo "  cp ${K8S_PLAT_CLUSTER_INPUT_DIR}/openstack/clouds.yaml.example ${OS_CLIENT_CONFIG_FILE}" >&2
+      echo "  cp ${K8S_PLAT_SENSITIVE_DIR}/openstack/clouds.yaml.example ${OS_CLIENT_CONFIG_FILE}" >&2
       echo "  chmod 600 ${OS_CLIENT_CONFIG_FILE}" >&2
       return 1
     fi

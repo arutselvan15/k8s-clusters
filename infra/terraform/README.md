@@ -21,7 +21,7 @@ source scripts/lib/kubeconfig-setup.sh sensitive/kind/<cluster_name>/kubeconfig
 
 Config: [`clusters/kind/k8s-kind/config.yaml`](../../clusters/kind/k8s-kind/config.yaml). Same as `./scripts/infra/up.sh kind k8s-kind`.
 
-Host ports **8080 → 80** and **8443 → 443** on the control-plane node (Argo UI later: https://argocd.dev:8443). Teardown: `./scripts/infra/down.sh kind`
+Host ports **8080 → 80** and **8443 → 443** on the control-plane node. Teardown: `./scripts/infra/down.sh kind`
 
 ## ec2
 
@@ -41,7 +41,7 @@ Checklist: **[environments/openstack/STEPS.md](environments/openstack/STEPS.md)*
 
 ```bash
 mkdir -p sensitive/openstack
-cp clusters/openstack/clouds.yaml.example sensitive/openstack/clouds.yaml && chmod 600 sensitive/openstack/clouds.yaml
+cp sensitive/openstack/clouds.yaml.example sensitive/openstack/clouds.yaml && chmod 600 sensitive/openstack/clouds.yaml
 ./scripts/infra/up.sh openstack k8s-ocp
 ./scripts/infra/kubeadm/up.sh openstack k8s-ocp
 source scripts/lib/kubeconfig-setup.sh sensitive/openstack/k8s-ocp/kubeconfig
@@ -61,7 +61,7 @@ terraform version   # >= 1.5
 
 ```bash
 source scripts/lib/kubeconfig-setup.sh sensitive/kind/<cluster_name>/kubeconfig   # or sensitive/<env>/<cluster_name>/kubeconfig
-./bootstrap/bootstrap.sh
+../k8s-gitops/bootstrap/bootstrap.sh
 ```
 
 Docs: [docs/README.md](../../docs/README.md)

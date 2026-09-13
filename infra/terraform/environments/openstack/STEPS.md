@@ -2,7 +2,7 @@
 
 **Goal:** Same as [ec2](../ec2/STEPS.md): Ubuntu VMs you install with kubeadm. Kind stays the local lab; AWS stays the other cloud. Kubernetes is **not** Magnum/OpenShift — it is the same `./scripts/infra/kubeadm/up.sh` after Terraform writes an inventory.
 
-Learning notes: [docs/infra/openstack.md](../../../../docs/infra/openstack.md). Then common [bootstrap](../../../../docs/bootstrap/) and [gitops](../../../../docs/gitops/).
+Learning notes: [docs/infra/openstack.md](../../../../docs/infra/openstack.md). Then [k8s-gitops](../../../../../k8s-gitops).
 
 **Apply:** from `k8s-platform/`
 
@@ -45,7 +45,7 @@ AWS name → OpenStack name: existing tenant net (not a new VPC), security group
 
 ```bash
 mkdir -p sensitive/openstack
-cp clusters/openstack/clouds.yaml.example sensitive/openstack/clouds.yaml
+cp sensitive/openstack/clouds.yaml.example sensitive/openstack/clouds.yaml
 chmod 600 sensitive/openstack/clouds.yaml
 ```
 

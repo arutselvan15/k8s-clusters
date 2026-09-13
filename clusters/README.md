@@ -10,9 +10,10 @@ clusters/
 ├── aws/
 │   └── k8s-aws/config.yaml       # ./scripts/infra/up.sh aws k8s-aws
 └── openstack/
-    ├── clouds.yaml.example          # copy once → sensitive/openstack/clouds.yaml
     └── k8s-ocp/config.yaml       # ./scripts/infra/up.sh openstack k8s-ocp
 ```
+
+OpenStack clouds file: copy [`sensitive/openstack/clouds.yaml.example`](../sensitive/openstack/clouds.yaml.example) → `sensitive/openstack/clouds.yaml`.
 
 CLI id = directory name. `cluster_name` in the YAML should match. AWS/OpenStack nodes: `{cluster_name}-cp`, `{cluster_name}-wk-N`. Outputs: `sensitive/<platform>/<cluster_name>/`.
 

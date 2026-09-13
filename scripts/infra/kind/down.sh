@@ -65,7 +65,6 @@ fi
 
 echo "==> Destroy Kind cluster ${K8S_PLAT_CLUSTER_NAME}: ${ENV_DIR}"
 "$REPO_ROOT/scripts/lib/require-tools.sh" terraform
-k8s_plat_migrate_to_sensitive
 k8s_plat_prepare_kind_runtime
 
 cd "$ENV_DIR"

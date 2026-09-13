@@ -42,7 +42,6 @@ After a successful apply, prompts to push sensitive/ to S3 with prune
 
 Build always applies exactly one cluster config.
 
-Day 0 + Day 1 (Kind): ./scripts/bootstrap/up.sh
 Teardown: $(dirname "$0")/down.sh [kind|aws|openstack] [cluster]
 EOF
 }

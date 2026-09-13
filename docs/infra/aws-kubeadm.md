@@ -127,7 +127,7 @@ kubectl get nodes -o wide
 
 `admin.conf` already has `https://<public-ip>:6443` because of `--control-plane-endpoint`.
 
-**Next:** same [bootstrap](../bootstrap/) and [gitops](../gitops/) as any other environment. Cloud `LoadBalancer` ingress needs a cloud controller (AWS CCM is not in the repo yet); that is an infra/values difference, not a second GitOps tree.
+**Next:** same [k8s-gitops](../../../k8s-gitops) as any other environment. Cloud `LoadBalancer` ingress needs a cloud controller (AWS CCM is not in the repo yet); that is an infra/values difference, not a second GitOps tree.
 
 ---
 

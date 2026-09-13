@@ -83,7 +83,6 @@ k8s_plat_resolve_cluster_config() {
   local resolved=""
   local yaml=""
 
-  k8s_plat_migrate_to_sensitive
   k8s_plat_require_cluster_spec "${platform}" "${spec}" || return 1
 
   if [[ "${spec}" == /* && -f "${spec}" ]]; then
@@ -147,7 +146,6 @@ k8s_plat_apply_cluster_outputs() {
   K8S_PLAT_TFSTATE="${K8S_PLAT_CLUSTER_DIR}/terraform.tfstate"
 
   if [[ "${platform}" == "kind" ]]; then
-    k8s_plat_migrate_kind_flat_outputs "${name}"
     K8S_PLAT_CLUSTER_SSH_KEY=""
     K8S_PLAT_CLUSTER_ENV=""
     K8S_PLAT_CLUSTER_KNOWN_HOSTS=""
@@ -165,22 +163,6 @@ k8s_plat_apply_cluster_outputs() {
   echo "==> Cluster ${K8S_PLAT_CLUSTER_NAME} (config ${yaml})"
   echo "    nodes ${K8S_PLAT_CLUSTER_NAME}-cp / ${K8S_PLAT_CLUSTER_NAME}-wk-N"
   echo "    outputs ${K8S_PLAT_CLUSTER_DIR}"
-}
-
-# leftover: sensitive/kind/{kubeconfig,tfstate} -> sensitive/kind/<cluster_name>/
-k8s_plat_migrate_kind_flat_outputs() {
-  local name="$1"
-  local plat="${K8S_PLAT_KIND_DIR:-${K8S_PLAT_SENSITIVE_DIR}/kind}"
-  local dest="${plat}/${name}"
-  local f
-  [[ -d "${plat}" ]] || return 0
-  for f in kubeconfig terraform.tfstate terraform.tfstate.backup; do
-    if [[ -f "${plat}/${f}" && ! -e "${dest}/${f}" ]]; then
-      mkdir -p "${dest}"
-      mv "${plat}/${f}" "${dest}/${f}"
-      echo "==> Moved ${plat}/${f} -> ${dest}/${f}"
-    fi
-  done
 }
 
 # After terraform destroy succeeds (or there is nothing left to destroy):

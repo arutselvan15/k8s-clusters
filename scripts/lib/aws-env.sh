@@ -73,7 +73,6 @@ k8s_plat_load_provider_vars() {
 }
 
 k8s_plat_require_aws_credentials() {
-  k8s_plat_migrate_to_sensitive
   mkdir -p "${K8S_PLAT_SENSITIVE_DIR}/aws"
 
   if [[ ! -f "${AWS_SHARED_CREDENTIALS_FILE}" ]]; then

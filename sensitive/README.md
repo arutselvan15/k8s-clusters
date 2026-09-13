@@ -2,6 +2,8 @@
 
 This folder is **gitignored**. Back it up with `./scripts/sensitive/s3.sh`.
 
+Argo CD repo Secrets live in **[k8s-gitops](../../k8s-gitops)/sensitive/bootstrap/**, not here.
+
 ```text
 sensitive/
 ├── aws/
@@ -10,12 +12,8 @@ sensitive/
 ├── openstack/
 │   ├── clouds.yaml
 │   └── k8s-ocp/
-├── kind/
-│   └── k8s-kind/          # kubeconfig, terraform.tfstate (removed by down.sh)
-└── bootstrap/
-    ├── README.md
-    ├── argocd/            # extra Helm + optional admin password
-    └── secrets/           # *.example committed; filled *.yaml gitignored
+└── kind/
+    └── k8s-kind/          # kubeconfig, terraform.tfstate (removed by down.sh)
 ```
 
 Cluster YAML stays in [`clusters/`](../clusters/README.md) and is committed.

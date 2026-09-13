@@ -1,7 +1,7 @@
 #!/bin/bash
 # Standalone CLI: verify commands exist on PATH.
 #
-#   ./scripts/lib/require-tools.sh kubectl helm envsubst
+#   ./scripts/lib/require-tools.sh kubectl terraform kind
 #
 # Other scripts invoke this with their required tool list; it is not sourced.
 
@@ -18,15 +18,12 @@ Usage: $(basename "$0") <command> [command ...]
 Exit 0 if every command is on PATH; otherwise print missing names and exit 1.
 
 Example:
-  $(basename "$0") kubectl helm envsubst
+  $(basename "$0") kubectl terraform kind
 EOF
 }
 
 tool_hint() {
   case "$1" in
-    envsubst)
-      echo "Install gettext (e.g. brew install gettext && brew link --force gettext)" >&2
-      ;;
     terraform)
       echo "Install Terraform >= 1.5 (e.g. brew tap hashicorp/tap && brew install hashicorp/tap/terraform)" >&2
       ;;

@@ -2,7 +2,7 @@
 
 **Goal:** A small Kubernetes cluster on EC2 that you install yourself with kubeadm (not EKS). Kind stays the free local lab.
 
-Learning notes: [docs/infra/aws.md](../../../../docs/infra/aws.md) → [aws-kubeadm.md](../../../../docs/infra/aws-kubeadm.md). Then common [bootstrap](../../../../docs/bootstrap/) and [gitops](../../../../docs/gitops/).
+Learning notes: [docs/infra/aws.md](../../../../docs/infra/aws.md) → [aws-kubeadm.md](../../../../docs/infra/aws-kubeadm.md). Then [k8s-gitops](../../../../../k8s-gitops).
 
 **Apply (every Terraform step):** from `k8s-platform/`
 

@@ -2,7 +2,7 @@
 
 Provision a Kubernetes **API**. Nothing here installs Argo CD or platform apps.
 
-Pick **one** environment. After `kubectl get nodes` works, go to [bootstrap](../bootstrap/) (common) then [gitops](../gitops/) (common).
+Pick **one** environment. After `kubectl get nodes` works, go to **[k8s-gitops](../../../k8s-gitops)** (Day 1 bootstrap, then Day 2 gitops).
 
 | Environment | Guide | What Terraform creates | Then |
 |-------------|--------|------------------------|------|
@@ -24,4 +24,4 @@ S3: after `up.sh` / `down.sh` (and kubeadm up/reset) you are asked to `push --pr
 
 Inputs (`clusters/`) vs outputs (`sensitive/`): [clusters/README.md](../../clusters/README.md) · [sensitive/README.md](../../sensitive/README.md)
 
-**Next (every environment):** [bootstrap](../bootstrap/) → [gitops](../gitops/)
+**Next (every environment):** [k8s-gitops](../../../k8s-gitops)

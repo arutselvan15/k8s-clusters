@@ -2,7 +2,7 @@
 
 **Question answered:** “Is there a cluster and can `kubectl` talk to it?”
 
-Nothing in Day 0 installs Argo CD, ingress, or cert-manager. After this environment is up, [bootstrap](../bootstrap/) and [gitops](../gitops/) are the **same** as on AWS or OpenStack.
+Nothing in Day 0 installs Argo CD, ingress, or cert-manager. After this environment is up, Day 1 and Day 2 are the **same** in **[k8s-gitops](../../../k8s-gitops)** as on AWS or OpenStack.
 
 ## Mental model
 
@@ -33,17 +33,9 @@ terraform:
   https_host_port: 8443  # → container 443
 ```
 
-That is why the Argo UI later is **https://argocd.dev:8443**, not `:443`.
+That is why later ingress on Kind is often **https://…:8443**, not `:443`.
 
 ## Commands
-
-**Shortcut (Day 0 + Day 1 in one script):**
-
-```bash
-./scripts/bootstrap/up.sh
-```
-
-**Day 0 only:**
 
 ```bash
 ./scripts/infra/up.sh kind
@@ -59,8 +51,8 @@ Use the **common** Day 1 / Day 2 path (only the kubeconfig path changes):
 
 ```bash
 source scripts/lib/kubeconfig-setup.sh sensitive/kind/k8s-kind/kubeconfig
-./bootstrap/bootstrap.sh
-./scripts/gitops/start.sh dev
+../k8s-gitops/bootstrap/bootstrap.sh
+../k8s-gitops/scripts/gitops/start.sh dev
 ```
 
 AWS and OpenStack Day 0: [aws.md](./aws.md), [openstack.md](./openstack.md). Dispatcher: [`scripts/infra/up.sh`](../../scripts/infra/up.sh).
@@ -77,6 +69,6 @@ Removes the cluster and deletes `sensitive/kind/<cluster_name>/` (kubeconfig and
 
 - [ ] What Kind is vs “Kubernetes in the cloud”
 - [ ] Where kubeconfig lives and why `KUBECONFIG` must be set
-- [ ] Why dev uses host ports 8080 and 8443
+- [ ] Why Kind maps host ports 8080 and 8443
 
-**Next:** [Day 1 — bootstrap (common)](../bootstrap/README.md) (or you already ran it via `scripts/bootstrap/up.sh`)
+**Next:** [k8s-gitops](../../../k8s-gitops)
