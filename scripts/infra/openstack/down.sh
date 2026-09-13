@@ -22,7 +22,7 @@ usage() {
 Usage: ./scripts/infra/openstack/down.sh [cluster] [-y]
 
 Destroy the OpenStack lab for one cluster config.
-Removes instances, ports, security group, and keypair.
+Removes instances, ports, security group, keypair, and the Octavia ingress LB if enabled.
 Does not delete the existing Neutron network (lookup only).
   -y, --yes   terraform destroy -auto-approve
 EOF

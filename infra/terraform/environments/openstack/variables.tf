@@ -77,3 +77,37 @@ variable "availability_zone" {
   type        = string
   description = "Optional Nova AZ. Empty = let the scheduler choose."
 }
+
+variable "subnet_name" {
+  type        = string
+  description = "Existing Neutron subnet on network_name. Required when octavia_lbs is non-empty (the tenant net has multiple subnets)."
+  default     = ""
+}
+
+variable "octavia_lb_flavor" {
+  type        = string
+  description = "Octavia flavor name for every LB in octavia_lbs (empty = cloud default)."
+  default     = "Octavia_2vCPUx2GB"
+}
+
+variable "octavia_lbs" {
+  type = list(object({
+    name            = string
+    http_node_port  = optional(number, 30080)
+    https_node_port = optional(number, 30443)
+  }))
+  description = "Octavia LBs to create. Each item is one VIP (TCP 80/443) and uses 1 project load-balancer quota. Empty = none."
+  default     = []
+
+  validation {
+    condition     = length(distinct([for lb in var.octavia_lbs : lb.name])) == length(var.octavia_lbs)
+    error_message = "octavia_lbs names must be unique."
+  }
+
+  validation {
+    condition = alltrue([
+      for lb in var.octavia_lbs : can(regex("^[a-z0-9]([a-z0-9-]*[a-z0-9])?$", lb.name))
+    ])
+    error_message = "Each octavia_lbs name must be lowercase alphanumeric with optional hyphens."
+  }
+}

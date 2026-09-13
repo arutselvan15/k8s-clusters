@@ -87,8 +87,9 @@ def load_simple(path):
             if not line.strip() or line.lstrip().startswith("#"):
                 continue
             indent = len(line) - len(line.lstrip(" "))
+            # Nested lists (octavia_lbs items) are parsed elsewhere; skip them here.
             if indent not in (0, 2):
-                sys.exit(1)
+                continue
             stripped = line.strip()
             if ":" not in stripped:
                 sys.exit(1)

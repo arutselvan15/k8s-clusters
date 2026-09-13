@@ -39,7 +39,7 @@ Checklist (compute): [terraform/environments/ec2/STEPS.md](terraform/environment
 
 ## OpenStack
 
-Auth: `sensitive/openstack/clouds.yaml`. Knobs: [`../clusters/openstack/k8s-ocp/config.yaml`](../clusters/openstack/k8s-ocp/config.yaml) (`image_name`, `node_flavor`, existing `network_name`).
+Auth: `sensitive/openstack/clouds.yaml`. Knobs: cluster YAML (`image_name`, `node_flavor`, existing `network_name`, `octavia_lbs`). Example: [`../clusters/openstack/k8s-ocp/config.yaml`](../clusters/openstack/k8s-ocp/config.yaml).
 
 ```bash
 ./scripts/infra/up.sh openstack k8s-ocp
@@ -48,7 +48,7 @@ Auth: `sensitive/openstack/clouds.yaml`. Knobs: [`../clusters/openstack/k8s-ocp/
 
 Terraform **looks up** the Neutron network; it does not create or destroy it.
 
-Checklist: [terraform/environments/openstack/STEPS.md](terraform/environments/openstack/STEPS.md). Teardown: `./scripts/infra/down.sh openstack k8s-ocp -y`
+Checklist: [terraform/environments/openstack/STEPS.md](terraform/environments/openstack/STEPS.md). Debug CLI: [docs/infra/openstack.md](../docs/infra/openstack.md#cli-cheat-sheet-debug). Teardown: `./scripts/infra/down.sh openstack k8s-ocp -y`
 
 S3 backup of `sensitive/` is offered by `./scripts/infra/up.sh` and `./scripts/infra/down.sh` (not by the per-cloud scripts).
 

@@ -63,3 +63,17 @@ output "ssh_worker" {
     ""
   )
 }
+
+output "octavia_lb_count" {
+  value = length(var.octavia_lbs)
+}
+
+output "octavia_lb_vips" {
+  value       = { for k, lb in openstack_lb_loadbalancer_v2.this : k => lb.vip_address }
+  description = "Map of Octavia VIP addresses keyed by octavia_lbs.name."
+}
+
+output "ingress_lb_vip" {
+  value       = try(openstack_lb_loadbalancer_v2.this["ingress"].vip_address, "")
+  description = "VIP for the LB named ingress, if present."
+}

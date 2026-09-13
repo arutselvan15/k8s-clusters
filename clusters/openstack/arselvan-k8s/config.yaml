@@ -22,6 +22,20 @@ terraform:
   image_name: UBUNTU-24-SM-2026-05-V2
   node_flavor: 4vCPUx8GB
   network_name: tenant-internal-direct-net
+  # Required for Octavia: this network has several subnets.
+  subnet_name: tenant-internal-direct-subnet7
+  # Octavia: each list item is one VIP (listeners stay 80/443) and uses 1 quota.
+  # NodePorts must be in 30000-32767. Convention here: service port + 30000
+  # (80→30080, 443→30443). Extra LBs pick unused ports in the same range.
+  # Keep these in sync with k8s-apps overlays/cluster/arselvan-k8s/*.yaml.
+  octavia_lb_flavor: Octavia_2vCPUx2GB
+  octavia_lbs:
+    - name: ingress
+      http_node_port: 30080
+      https_node_port: 30443
+    - name: envoy
+      http_node_port: 30090
+      https_node_port: 30453
 
 kubeadm:
   kubernetes_version: "1.32"
