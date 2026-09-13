@@ -1,5 +1,7 @@
+.DS_Store
 .kube/
-.idea
+.idea/
+.vscode/
 
 # Provider cache next to the .tf files (not in sensitive/)
 **/.terraform/
