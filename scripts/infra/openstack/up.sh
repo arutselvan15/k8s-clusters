@@ -76,12 +76,24 @@ terraform apply -input=false $AUTO_APPROVE "${K8S_TF_VAR_ARGS[@]}"
 
 write_cluster_env() {
   local envf="${K8S_PLAT_CLUSTER_ENV}"
-  local cp_host ssh_key workers k8s_version pod_cidr ssh_user
+  local cp_host ssh_key workers k8s_version pod_cidr ssh_user octavia_env
   mkdir -p "${K8S_PLAT_CLUSTER_DIR}"
   cp_host="$(terraform output -raw control_plane_public_ip)"
   ssh_key="$(terraform output -raw ssh_private_key_path)"
   workers="$(terraform output -raw worker_public_ips)"
   ssh_user="$(terraform output -raw ssh_user)"
+  octavia_env="$(terraform output -json octavia_lb_vips 2>/dev/null | python3 -c '
+import json, sys
+raw = sys.stdin.read().strip() or "{}"
+vips = json.loads(raw)
+if not isinstance(vips, dict):
+    vips = {}
+print("INGRESS_LB_VIP=" + str(vips.get("ingress", "")))
+print("OCTAVIA_LB_NAMES=" + " ".join(vips.keys()))
+for name, ip in vips.items():
+    key = name.upper().replace("-", "_")
+    print(f"OCTAVIA_LB_VIP_{key}={ip}")
+')"
   k8s_version="$(k8s_plat_yaml_require "${K8S_PLAT_CLUSTER_CONFIG}" kubernetes_version)" || return 1
   pod_cidr="$(k8s_plat_yaml_require "${K8S_PLAT_CLUSTER_CONFIG}" pod_cidr)" || return 1
   cat >"${envf}" <<EOF
@@ -96,6 +108,7 @@ K8S_VERSION=${k8s_version}
 POD_CIDR=${pod_cidr}
 KUBECONFIG_FILE=${K8S_PLAT_CLUSTER_KUBECONFIG}
 SSH_CONTROL_PLANE=ssh -i ${ssh_key} ${ssh_user}@${cp_host}
+${octavia_env}
 EOF
   chmod 600 "${envf}"
   echo "==> Wrote cluster outputs ${envf}"

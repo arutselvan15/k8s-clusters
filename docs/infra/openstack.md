@@ -23,7 +23,9 @@ source scripts/lib/kubeconfig-setup.sh sensitive/openstack/k8s-ocp/kubeconfig
 
 Terraform **looks up** `network_name` (for example `tenant-internal-direct-net`). It does **not** create a network, subnet, router, or floating IP. SSH uses the instance **fixed IP**; your laptop must be able to reach that tenant net (campus/VPN).
 
-**Tear down compute:** `./scripts/infra/down.sh openstack k8s-ocp -y` deletes VMs, ports, security group, and keypair. **It does not delete the existing network.** Kubernetes only (keep VMs): `./scripts/infra/kubeadm/reset.sh openstack k8s-ocp`.
+Set `octavia_lbs` in the cluster YAML: each list item is one Octavia VIP (TCP 80/443). Length of the list is N LBs; OpenStack load-balancer quota still caps how many can exist. Name one `ingress` to match k8s-apps NodePorts. VIPs land in `cluster.env` as `OCTAVIA_LB_VIP_<NAME>` (and `INGRESS_LB_VIP` if that name exists). Empty list skips Octavia. Do not also create these LBs with OCCM.
+
+**Tear down compute:** `./scripts/infra/down.sh openstack k8s-ocp -y` deletes VMs, ports, security group, keypair, and the Octavia LB if it was enabled. **It does not delete the existing network.** Kubernetes only (keep VMs): `./scripts/infra/kubeadm/reset.sh openstack k8s-ocp`.
 
 **CodeGuard:** never commit `clouds.yaml` or paste `application_credential_secret` into chat.
 

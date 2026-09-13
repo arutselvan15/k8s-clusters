@@ -15,7 +15,7 @@ Learning notes (compute): [docs/infra/openstack.md](../../../../docs/infra/opens
 **Code:** [`main.tf`](./main.tf).  
 **Tear down:** `./scripts/infra/down.sh openstack k8s-ocp -y`
 
-This cloud is **not** like AWS VPC: the project already has `tenant-internal-direct-net`. Terraform **looks up** that network and puts VMs on it. It does **not** create a network, subnet, router, or floating IP (those quotas are already used).
+This cloud is **not** like AWS VPC: the project already has `tenant-internal-direct-net`. Terraform **looks up** that network and puts VMs on it. It does **not** create a network, subnet, or router. Optional **Octavia** LBs are the `octavia_lbs` list in the cluster YAML.
 
 AWS name → OpenStack name: existing tenant net (not a new VPC), security group → Neutron **secgroup**, EC2 → Nova **instance**. SSH uses the instance **fixed IP** on that net (reachable if you are on the Cisco network).
 
@@ -33,7 +33,8 @@ AWS name → OpenStack name: existing tenant net (not a new VPC), security group
 | [5](#step-5--control-plane-vm) | Ubuntu VM on existing net + SSH | in main.tf |
 | [6](#step-6--worker-vms) | `worker_nodes` Ubuntu VMs | in main.tf |
 | [7](#step-7--ssh-and-outputs) | PEM, fixed IPs, inventory | in main.tf |
-| [8](#step-8--kubeadm) | Same kubeadm scripts as AWS | `./scripts/infra/kubeadm/up.sh openstack k8s-ocp` |
+| [8](#step-8--optional-octavia-ingress-lb) | One Octavia VIP for ingress-nginx | `lb.tf` if enabled |
+| [9](#step-9--kubeadm) | Kubernetes on those VMs | `./scripts/infra/kubeadm/up.sh openstack k8s-ocp` |
 
 ---
 
@@ -134,7 +135,24 @@ terraform -chdir=infra/terraform/environments/openstack output
 
 ---
 
-## Step 8 — kubeadm
+## Step 8 — Optional Octavia ingress LB
+
+Set in `clusters/openstack/<id>/config.yaml`:
+
+```yaml
+  subnet_name: tenant-internal-direct-subnet7
+  octavia_lb_flavor: Octavia_2vCPUx2GB
+  octavia_lbs:
+    - name: ingress
+      http_node_port: 30080
+      https_node_port: 30443
+```
+
+`subnet_name` is required when `octavia_lbs` is non-empty because the tenant network has multiple subnets. Each list item is one VIP (TCP 80 and 443) and uses **one** load-balancer quota. `octavia_lbs: []` skips Octavia. OpenStack quota still caps how many apply can create. Same NodePorts = several VIPs to the same ingress-nginx. Outputs: `octavia_lb_vips`, `ingress_lb_vip` if a name is `ingress`. Install ingress-nginx as **NodePort** with matching ports.
+
+---
+
+## Step 9 — kubeadm
 
 Same scripts as AWS. Point at the OpenStack inventory:
 
