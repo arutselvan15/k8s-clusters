@@ -1,6 +1,6 @@
 variable "cloud" {
   type        = string
-  description = "Cloud name in k8s-platform/sensitive/openstack/clouds.yaml."
+  description = "Cloud name in k8s-clusters/sensitive/openstack/clouds.yaml."
 }
 
 variable "cluster_name" {

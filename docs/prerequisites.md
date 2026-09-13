@@ -1,14 +1,6 @@
 # Prerequisites
 
-Do this once. Day 0 is this repo; Day 1–2 are **[k8s-gitops](../../k8s-gitops)**.
-
-## What you are building
-
-- **Day 0** — a cluster exists (`./scripts/infra/up.sh` → Kind, AWS, or OpenStack)
-- **Day 1** — Argo CD can read **k8s-gitops** (`bootstrap/` in that repo)
-- **Day 2** — platform apps are declared in **k8s-gitops** (`gitops/`)
-
-See [platform-lifecycle.md](./platform-lifecycle.md).
+Do this once before `./scripts/infra/up.sh`.
 
 ## Tools
 
@@ -18,21 +10,27 @@ brew install kind kubectl terraform
 
 AWS also needs the AWS CLI (`brew install awscli`). OpenStack uses `clouds.yaml` (no extra CLI required for Terraform).
 
-Or run [`scripts/lib/require-tools.sh`](../scripts/lib/require-tools.sh).
+Or run [`scripts/lib/require-tools.sh`](../scripts/lib/require-tools.sh) with the tools that environment needs (for example `terraform kubectl kind`).
 
 ## Secrets
 
-- **This repo:** `sensitive/aws/`, `sensitive/openstack/` (cloud keys). Copy `*.example`.
-- **k8s-gitops:** `sensitive/bootstrap/secrets/*.yaml` (Argo repo Secrets). Copy `*.example`.
-
-## Kubeconfig habit
+Copy examples under `sensitive/` and fill them locally. Do not commit filled files.
 
 ```bash
-source scripts/lib/kubeconfig-setup.sh sensitive/kind/<cluster_name>/kubeconfig    # Kind
+cp sensitive/aws/credentials.example sensitive/aws/credentials
+cp sensitive/aws/cli.conf.example sensitive/aws/cli.conf
+cp sensitive/openstack/clouds.yaml.example sensitive/openstack/clouds.yaml
+chmod 600 sensitive/aws/credentials sensitive/openstack/clouds.yaml
+```
+
+## Kubeconfig
+
+After a cluster is up:
+
+```bash
+source scripts/lib/kubeconfig-setup.sh sensitive/kind/k8s-kind/kubeconfig
 source scripts/lib/kubeconfig-setup.sh sensitive/aws/k8s-aws/kubeconfig
 source scripts/lib/kubeconfig-setup.sh sensitive/openstack/k8s-ocp/kubeconfig
 ```
 
-GitOps profile **`dev`** is the folder `k8s-gitops/gitops/clusters/dev/`, not a second Kind cluster.
-
-**Next:** [Day 0 — pick an environment](./infra/README.md)
+**Next:** [pick an environment](./infra/README.md)

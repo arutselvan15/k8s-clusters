@@ -1,6 +1,6 @@
-# Day 0 — Infrastructure
+# Infrastructure
 
-Provision a Kubernetes **API**. This tree is Terraform only. Argo CD and apps are in **[k8s-gitops](../../k8s-gitops)**.
+Terraform for Kind, AWS EC2, and OpenStack. Kubernetes on VMs is kubeadm ([`../scripts/infra/kubeadm/`](../scripts/README.md)), not Terraform.
 
 ```text
 infra/terraform/
@@ -20,7 +20,7 @@ Commands: [`../scripts/infra/`](../scripts/README.md). Inputs: [`../clusters/`](
 source scripts/lib/kubeconfig-setup.sh sensitive/kind/<cluster_name>/kubeconfig
 ```
 
-Knobs: [`../clusters/kind/k8s-kind/config.yaml`](../clusters/kind/k8s-kind/config.yaml). `./scripts/infra/up.sh kind` is the same as `./scripts/infra/up.sh kind k8s-kind`.
+Knobs: [`../clusters/kind/k8s-kind/config.yaml`](../clusters/kind/k8s-kind/config.yaml). Same as `./scripts/infra/up.sh kind k8s-kind`.
 
 Teardown: `./scripts/infra/down.sh kind`
 
@@ -52,15 +52,6 @@ Terraform **looks up** the Neutron network; it does not create or destroy it.
 
 Checklist: [terraform/environments/openstack/STEPS.md](terraform/environments/openstack/STEPS.md). Teardown: `./scripts/infra/down.sh openstack k8s-ocp -y`
 
-kubeadm is **not** Terraform. Same scripts on AWS and OpenStack after Day 0 writes `cluster.env`.
-
 S3 backup of `sensitive/` is offered by `./scripts/infra/up.sh` and `./scripts/infra/down.sh` (not by the per-cloud scripts).
 
-## Next
-
-```bash
-source scripts/lib/kubeconfig-setup.sh sensitive/kind/<cluster_name>/kubeconfig   # or aws / openstack path above
-../k8s-gitops/bootstrap/bootstrap.sh
-```
-
-Guides: [docs/infra/](../docs/infra/) · GitOps: [k8s-gitops](../../k8s-gitops)
+Guides: [docs/infra/](../docs/infra/)

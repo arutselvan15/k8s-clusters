@@ -110,5 +110,3 @@ terraform output
 echo ""
 echo "Next (kubeadm):"
 echo "  ${REPO_ROOT}/scripts/infra/kubeadm/up.sh ${K8S_PLAT_CLUSTER_PLATFORM} ${K8S_PLAT_CLUSTER_CONFIG_ID}"
-echo "Then Day 1: source scripts/lib/kubeconfig-setup.sh sensitive/${K8S_PLAT_CLUSTER_PLATFORM}/${K8S_PLAT_CLUSTER_NAME}/kubeconfig"
-echo "  ${REPO_ROOT}/../k8s-gitops/bootstrap/bootstrap.sh"

@@ -2,8 +2,6 @@
 
 This folder is **gitignored**. Back it up with `./scripts/sensitive/s3.sh`.
 
-Argo CD repo Secrets live in **[k8s-gitops](../../k8s-gitops)/sensitive/bootstrap/**, not here.
-
 ```text
 sensitive/
 ├── aws/

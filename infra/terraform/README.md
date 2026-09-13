@@ -1,4 +1,4 @@
-# Terraform (Day 0)
+# Terraform
 
 One root module per **environment**. Do not mix providers.
 
@@ -55,13 +55,6 @@ Terraform does **not** create or destroy the existing Neutron network.
 brew tap hashicorp/tap
 brew install hashicorp/tap/terraform
 terraform version   # >= 1.5
-```
-
-## Day 1
-
-```bash
-source scripts/lib/kubeconfig-setup.sh sensitive/kind/<cluster_name>/kubeconfig   # or sensitive/<env>/<cluster_name>/kubeconfig
-../k8s-gitops/bootstrap/bootstrap.sh
 ```
 
 Docs: [docs/README.md](../../docs/README.md)

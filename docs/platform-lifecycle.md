@@ -1,42 +1,24 @@
-# Platform lifecycle
+# Cluster lifecycle
 
-Cluster build is **k8s-clusters**. Bootstrap and GitOps are **[k8s-gitops](../../k8s-gitops)**.
+This repo creates a Kubernetes API on Kind, AWS EC2, or OpenStack.
 
-```text
-Day 0  this repo     kind · aws (ec2) · openstack
-Day 1  k8s-gitops    Argo CD + Git repo Secrets
-Day 2  k8s-gitops    Apps from Git (keeps growing)
-```
+| Environment | Create VMs / Kind | Install Kubernetes | Kubeconfig |
+|-------------|-------------------|--------------------|------------|
+| Kind | `./scripts/infra/up.sh kind` | Kind does it | `sensitive/kind/<cluster_name>/kubeconfig` |
+| AWS | `./scripts/infra/up.sh aws k8s-aws` | `./scripts/infra/kubeadm/up.sh aws k8s-aws` | `sensitive/aws/<cluster_name>/kubeconfig` |
+| OpenStack | `./scripts/infra/up.sh openstack k8s-ocp` | `./scripts/infra/kubeadm/up.sh openstack k8s-ocp` | `sensitive/openstack/<cluster_name>/kubeconfig` |
 
-Index: [README.md](./README.md) · Resume: [continue.md](./continue.md)
-
-| Phase | Question | Where |
-|-------|----------|--------|
-| **Day 0** | Is there a cluster? | `scripts/infra/up.sh`, kubeadm, Terraform |
-| **Day 1** | Can Git manage the cluster? | `k8s-gitops/bootstrap/` |
-| **Day 2** | What runs on the cluster? | `k8s-gitops/gitops/` |
-
-Kubeconfig after Day 0: `sensitive/<platform>/<cluster_name>/kubeconfig`.
-
-## Environments (Day 0)
-
-| Environment | Dispatcher | After Terraform | Kubeconfig |
-|-------------|------------|-----------------|------------|
-| `kind` | `./scripts/infra/up.sh kind` | Cluster is ready | `sensitive/kind/<cluster_name>/kubeconfig` |
-| `ec2` | `./scripts/infra/up.sh aws k8s-aws` | `./scripts/infra/kubeadm/up.sh aws k8s-aws` | `sensitive/aws/<cluster_name>/kubeconfig` |
-| `openstack` | `./scripts/infra/up.sh openstack k8s-ocp` | `./scripts/infra/kubeadm/up.sh openstack k8s-ocp` | `sensitive/openstack/<cluster_name>/kubeconfig` |
+- **Kind:** local Docker. Terraform applies the Kind cluster.
+- **AWS / OpenStack:** Terraform creates VMs only. kubeadm on those VMs is a separate step. Not EKS.
+- **OpenStack:** Terraform **looks up** `network_name`. Destroy does **not** delete that Neutron network.
 
 ```bash
 ./scripts/infra/up.sh kind
 source scripts/lib/kubeconfig-setup.sh sensitive/kind/<cluster_name>/kubeconfig
-
-cd ../k8s-gitops
-./bootstrap/bootstrap.sh
-git push origin main
-./scripts/gitops/start.sh dev
+kubectl get nodes
 ```
 
-Teardown Day 0 only (GitOps stays in the gitops repo). After destroy, the dispatcher prompts to push `sensitive/` to S3 with prune:
+Teardown:
 
 ```bash
 ./scripts/infra/down.sh kind
@@ -44,6 +26,6 @@ Teardown Day 0 only (GitOps stays in the gitops repo). After destroy, the dispat
 ./scripts/infra/down.sh openstack k8s-ocp -y
 ```
 
-OpenStack Terraform **looks up** `network_name`; destroy does **not** delete that network.
+After destroy, the dispatcher prompts to push `sensitive/` to S3 with prune.
 
-New platform apps: add them in **k8s-gitops**, not here.
+Index: [README.md](./README.md)

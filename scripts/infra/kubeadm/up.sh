@@ -130,6 +130,5 @@ echo ""
 echo "Cluster ready (kubeadm)."
 echo "  source ${REPO_ROOT}/scripts/lib/kubeconfig-setup.sh ${KUBECONFIG_FILE}"
 echo "  kubectl get nodes"
-echo "  Day 1 (k8s-gitops): ${REPO_ROOT}/../k8s-gitops/bootstrap/bootstrap.sh"
 
 k8s_plat_s3_offer

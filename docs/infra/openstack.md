@@ -1,6 +1,6 @@
-# Day 0 — OpenStack
+# OpenStack
 
-Same split as AWS: **Terraform = VMs**, **kubeadm = Kubernetes**. After nodes are Ready, [k8s-gitops](../../../k8s-gitops) is **common**.
+Same split as AWS: **Terraform = VMs**, **kubeadm = Kubernetes**.
 
 Checklist: [infra/terraform/environments/openstack/STEPS.md](../../infra/terraform/environments/openstack/STEPS.md).
 
@@ -24,4 +24,4 @@ Same kubeadm remote scripts as AWS. Reset Kubernetes only: `./scripts/infra/kube
 
 **CodeGuard:** never commit `clouds.yaml` or paste `application_credential_secret` into chat.
 
-**Next:** [k8s-gitops](../../../k8s-gitops) (same commands as Kind/AWS). Ingress `LoadBalancer` vs Kind `hostPort` is a values overlay, not a separate GitOps stack.
+**Done when:** `kubectl get nodes` works. SSH uses the instance **fixed IP**; your laptop must reach that tenant net.

@@ -1,12 +1,10 @@
-# Infra (Day 0)
+# Infra
 
-Provision a Kubernetes **API**. Nothing here installs Argo CD or platform apps.
-
-Pick **one** environment. After `kubectl get nodes` works, go to **[k8s-gitops](../../../k8s-gitops)** (Day 1 bootstrap, then Day 2 gitops).
+Provision a Kubernetes **API**. Pick **one** environment.
 
 | Environment | Guide | What Terraform creates | Then |
 |-------------|--------|------------------------|------|
-| **Kind** | [kind.md](./kind.md) | Local Kind cluster `dev`, host ports 8080/8443 | Cluster is ready |
+| **Kind** | [kind.md](./kind.md) | Local Kind cluster, host ports 8080/8443 | Cluster is ready |
 | **AWS EC2** | [aws.md](./aws.md) + [aws-kubeadm.md](./aws-kubeadm.md) | VPC, SG, EC2 | `./scripts/infra/kubeadm/up.sh aws k8s-aws` |
 | **OpenStack** | [openstack.md](./openstack.md) | Ports, VMs on an **existing** Neutron net | `./scripts/infra/kubeadm/up.sh openstack k8s-ocp` |
 
@@ -23,5 +21,3 @@ kubeadm is **not** Terraform. The same remote scripts install Kubernetes on AWS 
 S3: after `up.sh` / `down.sh` (and kubeadm up/reset) you are asked to `push --prune`. Bucket name: `clusters/backup.yaml`.
 
 Inputs (`clusters/`) vs outputs (`sensitive/`): [clusters/README.md](../../clusters/README.md) · [sensitive/README.md](../../sensitive/README.md)
-
-**Next (every environment):** [k8s-gitops](../../../k8s-gitops)

@@ -38,4 +38,4 @@ If a platform has more than one cluster dir, pass the id (`./scripts/infra/up.sh
 | `sensitive/aws/credentials` | no | AWS CLI / Terraform |
 | `sensitive/openstack/clouds.yaml` | no | OpenStack provider |
 
-Day 0: [infra/README.md](../infra/README.md)
+See [infra/README.md](../infra/README.md)

@@ -2,9 +2,9 @@
 
 **Goal:** A small Kubernetes cluster on EC2 that you install yourself with kubeadm (not EKS). Kind stays the free local lab.
 
-Learning notes: [docs/infra/aws.md](../../../../docs/infra/aws.md) → [aws-kubeadm.md](../../../../docs/infra/aws-kubeadm.md). Then [k8s-gitops](../../../../../k8s-gitops).
+Learning notes: [docs/infra/aws.md](../../../../docs/infra/aws.md) → [aws-kubeadm.md](../../../../docs/infra/aws-kubeadm.md).
 
-**Apply (every Terraform step):** from `k8s-platform/`
+**Apply (every Terraform step):** from `k8s-clusters/`
 
 ```bash
 ./scripts/infra/up.sh aws k8s-aws
@@ -178,7 +178,7 @@ Console: **VPC → Security groups → k8s-aws-sg**.
 
 User is **`ubuntu`** (Ubuntu AMI). The private key is **`sensitive/aws/k8s-aws/ssh.pem`** (gitignored). Do not commit it or paste it into chat.
 
-From `k8s-platform/`:
+From `k8s-clusters/`:
 
 ```bash
 # 1. Instance must be Running (wait ~30s after apply)
@@ -258,7 +258,7 @@ terraform -chdir=infra/terraform/environments/ec2 output
 
 No new AWS bill beyond the VMs.
 
-From `k8s-platform/` (takes ~10–15 minutes; VMs must be Running; inventory must exist):
+From `k8s-clusters/` (takes ~10–15 minutes; VMs must be Running; inventory must exist):
 
 ```bash
 ./scripts/infra/kubeadm/up.sh aws k8s-aws
@@ -273,7 +273,7 @@ Inventory (gitignored; Day 0 writes it): `sensitive/aws/k8s-aws/cluster.env`. Te
 On the laptop, note the IPs (used as `--control-plane-endpoint` so kubectl from the Mac hits `:6443`):
 
 ```bash
-cd k8s-platform
+cd k8s-clusters
 terraform -chdir=infra/terraform/environments/ec2 output control_plane_public_ip
 terraform -chdir=infra/terraform/environments/ec2 output control_plane_private_ip
 terraform -chdir=infra/terraform/environments/ec2 output worker_private_ip
@@ -368,7 +368,7 @@ kubectl get nodes -o wide
 
 ### 8d — kubeconfig on the laptop
 
-From `k8s-platform/` on the Mac (not inside SSH):
+From `k8s-clusters/` on the Mac (not inside SSH):
 
 ```bash
 mkdir -p sensitive/aws/k8s-aws

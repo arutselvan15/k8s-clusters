@@ -5,7 +5,7 @@ variable "aws_region" {
 
 variable "aws_profile" {
   type        = string
-  description = "Profile name in k8s-platform/sensitive/aws/credentials."
+  description = "Profile name in k8s-clusters/sensitive/aws/credentials."
 }
 
 variable "cluster_name" {

@@ -1,4 +1,4 @@
-# Day 0 — AWS kubeadm
+# AWS kubeadm
 
 **Prerequisites:** [aws.md](./aws.md) lessons **AWS-0** through **AWS-7** (SSH to control plane works). Inventory exists at `sensitive/<env>/<cluster_name>/cluster.env` after `./scripts/infra/up.sh aws k8s-aws`.
 
@@ -127,13 +127,13 @@ kubectl get nodes -o wide
 
 `admin.conf` already has `https://<public-ip>:6443` because of `--control-plane-endpoint`.
 
-**Next:** same [k8s-gitops](../../../k8s-gitops) as any other environment. Cloud `LoadBalancer` ingress needs a cloud controller (AWS CCM is not in the repo yet); that is an infra/values difference, not a second GitOps tree.
+**Next:** `kubectl get nodes`. Cloud `LoadBalancer` Services need a cloud controller (AWS CCM is not in this repo yet).
 
 ---
 
 ## CKA drills (same cluster)
 
-Practice in namespace `cka-practice`: taints, drains, NetworkPolicy, RBAC, PV/PVC. Avoid breaking `argocd`, `ingress-nginx`, `cert-manager` once installed.
+Practice in namespace `cka-practice`: taints, drains, NetworkPolicy, RBAC, PV/PVC. Don't break the control-plane namespace.
 
 ---
 
