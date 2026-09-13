@@ -10,7 +10,7 @@ Kubernetes clusters on **Kind**, **AWS EC2**, or **OpenStack**. Cloud **compute*
 | [scripts/](scripts/README.md) | `up.sh` / `down.sh` / kubeadm / S3 |
 
 ```bash
-./scripts/infra/up.sh kind
+./scripts/infra/up.sh kind k8s-kind
 ./scripts/infra/up.sh aws k8s-aws
 ./scripts/infra/up.sh openstack k8s-ocp
 ```
