@@ -1,0 +1,8 @@
+# Copy to sensitive/aws/cli.conf
+#   cp clusters/aws/cli.conf.example sensitive/aws/cli.conf
+#
+# Region for AWS CLI / Terraform. Cluster knobs are in clusters/aws/*.yaml.
+
+[default]
+region = us-east-1
+output = json

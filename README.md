@@ -1,4 +1,4 @@
-# k8s-platform
+# k8s-clusters
 
 Day 0 cluster · Day 1 Argo CD · Day 2 apps from Git. Same bootstrap and GitOps on Kind, AWS, and OpenStack.
 

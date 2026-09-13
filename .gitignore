@@ -5,12 +5,4 @@
 **/.terraform/
 
 # sensitive/ — secrets + outputs (S3). clusters/ is committed.
-sensitive/**
-!sensitive/README.md
-!sensitive/bootstrap/
-!sensitive/bootstrap/README.md
-!sensitive/bootstrap/*.example
-!sensitive/bootstrap/argocd/
-!sensitive/bootstrap/argocd/*.example
-!sensitive/bootstrap/secrets/
-!sensitive/bootstrap/secrets/*.example
+# sensitive/**
