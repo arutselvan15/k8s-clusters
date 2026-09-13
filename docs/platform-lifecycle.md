@@ -44,7 +44,7 @@ Kubeconfig path is the only required switch after Day 0: `sensitive/<platform>/<
 
 Day 1 is `./bootstrap/bootstrap.sh`. Day 2 uses GitOps profile **`dev`**: `./scripts/gitops/start.sh dev`, `gitops/clusters/dev/`. That is the GitOps cluster name, not a second Kind cluster.
 
-Bootstrap pins: `bootstrap/env/defaults.env` + gitignored `sensitive/bootstrap/bootstrap.env` (loaded in `install.sh` only).
+Bootstrap: chart pin in `bootstrap/bootstrap.sh`; repo Secrets in `sensitive/bootstrap/secrets/*.yaml`.
 
 ## Shared workflow
 
@@ -63,7 +63,7 @@ git push origin main
 
 Kind-only shortcut for steps 1–2: `./scripts/bootstrap/up.sh`
 
-**Kind UI (after cert Ready):** `127.0.0.1 argocd.dev` in `/etc/hosts` → **https://argocd.dev:8443**. Re-run `./bootstrap/bootstrap.sh` when `argocd-server-tls` is Ready. See [bootstrap/README.md](../bootstrap/README.md) and [gitops/README.md](../gitops/README.md).
+**Argo CD UI:** `kubectl -n argocd port-forward svc/argocd-server 8080:80` → http://localhost:8080. See [bootstrap/README.md](../bootstrap/README.md).
 
 Teardown Day 0 only (`gitops/` and `bootstrap/` stay in Git). After destroy, the dispatcher prompts to push `sensitive/` to S3 with prune:
 

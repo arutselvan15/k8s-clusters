@@ -25,14 +25,9 @@ Or run [`scripts/lib/require-tools.sh`](../scripts/lib/require-tools.sh) — use
 
 Optional for a custom Argo admin password: `htpasswd` (e.g. Apache `httpd` tools).
 
-## Secrets (optional, Day 1)
+## Secrets (Day 1)
 
-```bash
-mkdir -p sensitive/bootstrap
-cp bootstrap/env/bootstrap.env.example sensitive/bootstrap/bootstrap.env
-```
-
-Edit `sensitive/bootstrap/bootstrap.env` (gitignored) for `GITHUB_PAT`, SSH key, or `ARGOCD_ADMIN_PASSWORD`. Committed defaults live in [`bootstrap/env/defaults.env`](../bootstrap/env/defaults.env) (`ARGO_CD_CHART_VERSION`, `GIT_REPO_URL`). Optional Helm overrides: `sensitive/bootstrap/values.yaml` (see `bootstrap/argocd/values.example.yaml`).
+`sensitive/bootstrap/bootstrap.env` (optional) and `sensitive/bootstrap/secrets/*.yaml` (repo Secrets). Copy `*.yaml.example` to `*.yaml`.
 
 ## Kubeconfig habit
 

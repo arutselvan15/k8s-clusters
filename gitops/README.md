@@ -8,7 +8,7 @@ source scripts/lib/kubeconfig-setup.sh sensitive/kind/<cluster_name>/kubeconfig 
 ./scripts/gitops/start.sh dev
 ```
 
-When **`argocd-server-tls`** is Ready, re-run **`./bootstrap/bootstrap.sh`** → **https://argocd.dev:8443**.
+Argo CD UI: `kubectl -n argocd port-forward svc/argocd-server 8080:80` → http://localhost:8080 (Helm ingress is off).
 
 Full reference below. Add an app: values under `apps/` + Application under `clusters/dev/core/applications/`.
 
@@ -95,7 +95,7 @@ gitops/
 ## Prerequisites
 
 1. **Day 1 done** — Argo CD running (`./scripts/bootstrap/up.sh`, or `./scripts/infra/up.sh kind` then `./bootstrap/bootstrap.sh`).
-2. **Git repo registered** — `argocd/install.sh` applies repo Secrets ([`../bootstrap/env/`](../bootstrap/env/) + `sensitive/bootstrap/bootstrap.env`).
+2. **Git repo registered** — `./bootstrap/bootstrap.sh` applies `sensitive/bootstrap/secrets/*.yaml`.
 3. **`KUBECONFIG`** set ([`../scripts/lib/kubeconfig-setup.sh`](../scripts/lib/kubeconfig-setup.sh)).
 4. **Push to Git** — Argo clones remote, not your working tree.
 
@@ -134,7 +134,13 @@ kubectl get applications -n argocd
 kubectl get certificate -n argocd argocd-server-tls
 ```
 
-Add **`127.0.0.1 argocd.dev`** to `/etc/hosts`. When the Certificate is **Ready**, run **`./bootstrap/bootstrap.sh`**, then open **https://argocd.dev:8443**.
+Argo CD UI (no ingress):
+
+```bash
+kubectl -n argocd port-forward svc/argocd-server 8080:80
+```
+
+http://localhost:8080
 
 ### 5. Migrate old layouts
 
@@ -178,7 +184,7 @@ Do not add cert YAML under **`applications/`**. Use **`core-certificates`** → 
 | Phase | Installed by |
 |--------|----------------|
 | Cluster (Day 0) | Kind / Terraform |
-| Argo CD (Day 1) | `bootstrap.sh` → `argocd/install.sh` |
+| Argo CD (Day 1) | `bootstrap/bootstrap.sh` |
 | Seed **`core-apps`** | [`../scripts/gitops/start.sh`](../scripts/gitops/start.sh) `<profile>` |
 
 See also: [`../docs/README.md`](../docs/README.md), [`../docs/platform-lifecycle.md`](../docs/platform-lifecycle.md), [Day 1 bootstrap](../bootstrap/README.md), [GitOps notes](../docs/gitops/).

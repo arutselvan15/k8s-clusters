@@ -12,7 +12,10 @@ sensitive/
 │   └── k8s-ocp/
 ├── kind/
 │   └── k8s-kind/          # kubeconfig, terraform.tfstate (removed by down.sh)
-└── bootstrap/             # bootstrap.env, optional values.yaml (Argo CD)
+└── bootstrap/
+    ├── README.md
+    ├── argocd/            # extra Helm + optional admin password
+    └── secrets/           # *.example committed; filled *.yaml gitignored
 ```
 
 Cluster YAML stays in [`clusters/`](../clusters/README.md) and is committed.

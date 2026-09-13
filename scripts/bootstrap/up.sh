@@ -50,7 +50,7 @@ fi
 CLUSTER="$(k8s_plat_effective_cluster_spec kind "${CLUSTER}")" || exit 1
 
 echo "==> Validate tools"
-"$REPO_ROOT/scripts/lib/require-tools.sh" kubectl helm envsubst
+"$REPO_ROOT/scripts/lib/require-tools.sh" kubectl helm
 
 echo "==> Day 0: Kind cluster"
 "$REPO_ROOT/scripts/infra/up.sh" kind "${CLUSTER}"

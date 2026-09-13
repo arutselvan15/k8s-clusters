@@ -1,6 +1,6 @@
 # Argo CD ingress & TLS
 
-**Common pattern** (Helm overlay + GitOps Certificate). Kind currently uses hostname `argocd.dev` and host port **8443**.
+**Common pattern** (Helm ingress + GitOps Certificate). Host and port come from `bootstrap/argocd/values.yaml` (Kind often maps **8443**).
 
 **Depends on:**
 
@@ -64,7 +64,7 @@ Key files:
 
 [`bootstrap/argocd/values.yaml`](../../bootstrap/argocd/values.yaml):
 
-- `server.ingress.enabled: true`, `ingressClassName: nginx`, `hostname: argocd.dev`
+- `server.ingress.enabled: true`, `ingressClassName: nginx`, `hostname` / `secretName` from that file
 - `server.ingress.tls: true`, `secretName: argocd-server-tls`
 - `configs.params.server.insecure: true` — TLS terminates at **ingress**; ingress uses HTTP to the Argo pod (`backend-protocol: HTTP`)
 

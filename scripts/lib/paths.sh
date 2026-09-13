@@ -26,13 +26,16 @@ k8s_plat_migrate_to_sensitive() {
   mkdir -p \
     "${K8S_PLAT_SENSITIVE_DIR}/aws" \
     "${K8S_PLAT_SENSITIVE_DIR}/openstack" \
-    "${K8S_PLAT_SENSITIVE_DIR}/bootstrap"
+    "${K8S_PLAT_SENSITIVE_DIR}/bootstrap/argocd" \
+    "${K8S_PLAT_SENSITIVE_DIR}/bootstrap/secrets"
 
   for src in \
     "${REPO_ROOT}/config/aws/credentials:${K8S_PLAT_AWS_CREDENTIALS}" \
     "${REPO_ROOT}/config/aws/cli.conf:${K8S_PLAT_AWS_CLI_CONF}" \
     "${REPO_ROOT}/config/openstack/clouds.yaml:${K8S_PLAT_OS_CLOUDS}" \
-    "${REPO_ROOT}/bootstrap/env/bootstrap.env:${K8S_PLAT_SENSITIVE_DIR}/bootstrap/bootstrap.env"; do
+    "${REPO_ROOT}/bootstrap/env/bootstrap.env:${K8S_PLAT_SENSITIVE_DIR}/bootstrap/argocd/bootstrap.env" \
+    "${K8S_PLAT_SENSITIVE_DIR}/bootstrap/bootstrap.env:${K8S_PLAT_SENSITIVE_DIR}/bootstrap/argocd/bootstrap.env" \
+    "${K8S_PLAT_SENSITIVE_DIR}/bootstrap/values.yaml:${K8S_PLAT_SENSITIVE_DIR}/bootstrap/argocd/values.yaml"; do
     dest="${src#*:}"
     src="${src%%:*}"
     if [[ -f "${src}" && ! -f "${dest}" ]]; then
