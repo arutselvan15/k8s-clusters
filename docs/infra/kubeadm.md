@@ -1,8 +1,21 @@
-# AWS kubeadm
+# Kubernetes install (kubeadm)
 
-**Prerequisites:** [aws.md](./aws.md) lessons **AWS-0** through **AWS-7** (SSH to control plane works). Inventory exists at `sensitive/<env>/<cluster_name>/cluster.env` after `./scripts/infra/up.sh aws k8s-aws`.
+**This doc is Kubernetes only.** It does **not** create, resize, or destroy VMs.
 
-## Automated (same as the remote scripts)
+Compute and Kubernetes are **independent**:
+
+| Layer | Owns | Command | Does not |
+|-------|------|---------|----------|
+| **Compute** | VMs, SSH, inventory | `./scripts/infra/up.sh aws k8s-aws` — [aws.md](./aws.md) | install kubelet, etcd, or the API |
+| **Kubernetes** | kubeadm, CNI, kubeconfig | `./scripts/infra/kubeadm/up.sh aws k8s-aws` (this doc) | run Terraform or change EC2 |
+
+You can create VMs and stop. You can install Kubernetes later on the same inventory. You can `kubeadm reset` and keep the VMs. You can destroy VMs without resetting Kubernetes first (the API is gone with the instances).
+
+The same kubeadm scripts work on **OpenStack** VMs (`./scripts/infra/kubeadm/up.sh openstack k8s-ocp`). The cloud only matters for how you got SSH + `cluster.env`.
+
+**Need:** SSH to the control plane and `sensitive/<env>/<cluster_name>/cluster.env` from compute (`./scripts/infra/up.sh …`).
+
+## Automated
 
 ```bash
 ./scripts/infra/kubeadm/up.sh aws k8s-aws
@@ -10,15 +23,15 @@ source scripts/lib/kubeconfig-setup.sh sensitive/aws/k8s-aws/kubeconfig
 kubectl get nodes -o wide
 ```
 
-kubeadm is **not** Terraform. It SSHs using the inventory and streams [`scripts/infra/kubeadm/remote/`](../../scripts/infra/kubeadm/remote/) over stdin (no scp). Safe to re-run.
+kubeadm SSHs using the inventory and streams [`scripts/infra/kubeadm/remote/`](../../scripts/infra/kubeadm/remote/) over stdin (no scp). Safe to re-run. It does not call Terraform.
 
-Pod CIDR is `192.168.0.0/16` so it does **not** overlap the VPC `10.0.0.0/16`.
+Pod CIDR is `192.168.0.0/16` so it does **not** overlap the AWS VPC `10.0.0.0/16`.
 
 Manual steps below are the CKA-style walkthrough (same commands as the remote scripts).
 
 Pin one Kubernetes minor version on **every** node (`kubernetes_version` in `clusters/aws/k8s-aws/config.yaml`, default **1.32** — check [pkgs.k8s.io](https://pkgs.k8s.io) for current patch).
 
-Use **`terraform output control_plane_public_ip`** for the API endpoint.
+Use **`terraform output control_plane_public_ip`** (or the host in `cluster.env`) for the API endpoint. That IP came from compute; kubeadm only consumes it.
 
 ---
 
@@ -127,7 +140,7 @@ kubectl get nodes -o wide
 
 `admin.conf` already has `https://<public-ip>:6443` because of `--control-plane-endpoint`.
 
-**Next:** `kubectl get nodes`. Cloud `LoadBalancer` Services need a cloud controller (AWS CCM is not in this repo yet).
+Cloud `LoadBalancer` Services need a cloud controller (AWS CCM is not in this repo yet). That is still a compute/cloud concern, not kubeadm.
 
 ---
 
@@ -137,11 +150,14 @@ Practice in namespace `cka-practice`: taints, drains, NetworkPolicy, RBAC, PV/PV
 
 ---
 
-## Reset before terraform destroy
+## Reset Kubernetes (keep compute)
+
+Does **not** destroy EC2:
 
 ```bash
 ./scripts/infra/kubeadm/reset.sh aws k8s-aws
-./scripts/infra/down.sh aws k8s-aws -y
 ```
 
-Or by hand: `kubeadm reset -f` on workers then control plane, then [Lesson AWS-15](./aws.md#lesson-aws-15-teardown).
+Or by hand: `kubeadm reset -f` on workers then control plane.
+
+Destroy VMs (compute, independent): [Lesson AWS-15](./aws.md#lesson-aws-15-teardown) / `./scripts/infra/down.sh aws k8s-aws -y`.

@@ -32,11 +32,10 @@ Keys: `sensitive/aws/credentials` and `sensitive/aws/cli.conf`. Knobs: [`../clus
 
 ```bash
 ./scripts/infra/up.sh aws k8s-aws
-./scripts/infra/kubeadm/up.sh aws k8s-aws
-source scripts/lib/kubeconfig-setup.sh sensitive/aws/k8s-aws/kubeconfig
+# Kubernetes is independent: ./scripts/infra/kubeadm/up.sh aws k8s-aws
 ```
 
-Checklist: [terraform/environments/ec2/STEPS.md](terraform/environments/ec2/STEPS.md). Teardown: `./scripts/infra/down.sh aws k8s-aws -y`
+Checklist (compute): [terraform/environments/ec2/STEPS.md](terraform/environments/ec2/STEPS.md). Kubernetes: [docs/infra/kubeadm.md](../docs/infra/kubeadm.md). Teardown VMs: `./scripts/infra/down.sh aws k8s-aws -y`
 
 ## OpenStack
 
@@ -44,8 +43,7 @@ Auth: `sensitive/openstack/clouds.yaml`. Knobs: [`../clusters/openstack/k8s-ocp/
 
 ```bash
 ./scripts/infra/up.sh openstack k8s-ocp
-./scripts/infra/kubeadm/up.sh openstack k8s-ocp
-source scripts/lib/kubeconfig-setup.sh sensitive/openstack/k8s-ocp/kubeconfig
+# Kubernetes is independent: ./scripts/infra/kubeadm/up.sh openstack k8s-ocp
 ```
 
 Terraform **looks up** the Neutron network; it does not create or destroy it.

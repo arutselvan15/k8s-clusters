@@ -1,16 +1,16 @@
-# AWS (Terraform)
+# AWS (compute)
 
-**Goal:** Create EC2 VMs with **Terraform**, then install Kubernetes with **kubeadm** ([aws-kubeadm.md](./aws-kubeadm.md)).
+**This doc is VMs only.** Terraform creates EC2 (VPC, subnet, security groups, instances, SSH). It does **not** install Kubernetes.
 
-This is one lab environment. It is not a separate product.
+Kubernetes is a **separate, optional** step: [kubeadm.md](./kubeadm.md). You can leave the VMs as plain Ubuntu.
 
 Prefer the dispatcher over raw `terraform` once credentials exist:
 
 ```bash
 ./scripts/infra/up.sh aws k8s-aws
-./scripts/infra/kubeadm/up.sh aws k8s-aws
-source scripts/lib/kubeconfig-setup.sh sensitive/aws/k8s-aws/kubeconfig
 ```
+
+Done when you can SSH to the control-plane instance. Inventory for a later kubeadm run: `sensitive/aws/k8s-aws/cluster.env` (gitignored).
 
 - Checklist (why each object exists): [infra/terraform/environments/ec2/STEPS.md](../../infra/terraform/environments/ec2/STEPS.md)
 - Root module: [environments/ec2/main.tf](../../infra/terraform/environments/ec2/main.tf)
@@ -36,7 +36,6 @@ infra/terraform/environments/ec2/
 | [AWS-5](#lesson-aws-5) Control plane EC2 | ☐ |
 | [AWS-6](#lesson-aws-6) Worker EC2 | ☐ |
 | [AWS-7](#lesson-aws-7) Outputs & SSH | ☐ |
-| [K-1–K-4](./aws-kubeadm.md) kubeadm cluster | ☐ |
 | [AWS-15](#lesson-aws-15) Teardown | ☐ |
 
 The current `main.tf` applies **all** of AWS-1–7 in one `./scripts/infra/up.sh aws k8s-aws`. Read STEPS.md as you go so you still learn each object. Incremental `-target` is optional.
@@ -175,9 +174,9 @@ PEM: `sensitive/aws/k8s-aws/ssh.pem` (gitignored). User: `ubuntu`.
 terraform -chdir=infra/terraform/environments/ec2 output
 ```
 
-`./scripts/infra/up.sh aws k8s-aws` writes `sensitive/aws/k8s-aws/cluster.env` (gitignored) for kubeadm.
+`./scripts/infra/up.sh aws k8s-aws` writes `sensitive/aws/k8s-aws/cluster.env` (gitignored). Compute is finished.
 
-**Next:** [aws-kubeadm.md](./aws-kubeadm.md) — automated `./scripts/infra/kubeadm/up.sh` or manual K-1–K-4.
+Kubernetes (independent): [kubeadm.md](./kubeadm.md).
 
 ---
 
@@ -185,7 +184,7 @@ terraform -chdir=infra/terraform/environments/ec2 output
 
 ## Lesson AWS-15 — Teardown
 
-Kubernetes only (keep VMs): `./scripts/infra/kubeadm/reset.sh aws k8s-aws`
+Kubernetes only (VMs stay): `./scripts/infra/kubeadm/reset.sh aws k8s-aws` — see [kubeadm.md](./kubeadm.md). Independent of Terraform destroy.
 
 Then:
 

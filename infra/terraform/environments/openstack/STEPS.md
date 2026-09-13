@@ -1,8 +1,8 @@
-# OpenStack + kubeadm — step checklist
+# OpenStack — compute checklist
 
-**Goal:** Same as [ec2](../ec2/STEPS.md): Ubuntu VMs you install with kubeadm. Kind stays the local lab; AWS stays the other cloud. Kubernetes is **not** Magnum/OpenShift — it is the same `./scripts/infra/kubeadm/up.sh` after Terraform writes an inventory.
+**Goal:** Ubuntu VMs on an existing Neutron net you can SSH to. Kubernetes is a **separate** doc: [kubeadm.md](../../../../docs/infra/kubeadm.md) (`./scripts/infra/kubeadm/up.sh openstack k8s-ocp`). Not Magnum/OpenShift.
 
-Learning notes: [docs/infra/openstack.md](../../../../docs/infra/openstack.md).
+Learning notes (compute): [docs/infra/openstack.md](../../../../docs/infra/openstack.md).
 
 **Apply:** from `k8s-clusters/`
 

@@ -1,12 +1,14 @@
 # Infra
 
-Provision a Kubernetes **API**. Pick **one** environment.
+Two independent layers on AWS and OpenStack: **compute** (VMs) and **Kubernetes** (kubeadm). Kind is local and includes the API in one step.
 
-| Environment | Guide | What Terraform creates | Then |
-|-------------|--------|------------------------|------|
-| **Kind** | [kind.md](./kind.md) | Local Kind cluster, host ports 8080/8443 | Cluster is ready |
-| **AWS EC2** | [aws.md](./aws.md) + [aws-kubeadm.md](./aws-kubeadm.md) | VPC, SG, EC2 | `./scripts/infra/kubeadm/up.sh aws k8s-aws` |
-| **OpenStack** | [openstack.md](./openstack.md) | Ports, VMs on an **existing** Neutron net | `./scripts/infra/kubeadm/up.sh openstack k8s-ocp` |
+| Environment | Compute (VMs / Kind) | Kubernetes |
+|-------------|----------------------|------------|
+| **Kind** | [kind.md](./kind.md) — `./scripts/infra/up.sh kind` | Included (Kind creates the API) |
+| **AWS EC2** | [aws.md](./aws.md) — `./scripts/infra/up.sh aws k8s-aws` | [kubeadm.md](./kubeadm.md) — `./scripts/infra/kubeadm/up.sh aws k8s-aws` |
+| **OpenStack** | [openstack.md](./openstack.md) — `./scripts/infra/up.sh openstack k8s-ocp` | Same kubeadm scripts — `./scripts/infra/kubeadm/up.sh openstack k8s-ocp` |
+
+`up.sh` never runs kubeadm. `kubeadm/up.sh` never runs Terraform.
 
 ```bash
 ./scripts/infra/up.sh kind
@@ -15,8 +17,6 @@ Provision a Kubernetes **API**. Pick **one** environment.
 ```
 
 Code: [`infra/terraform/environments/`](../../infra/terraform/environments/). Dispatcher: [`scripts/infra/up.sh`](../../scripts/infra/up.sh).
-
-kubeadm is **not** Terraform. The same remote scripts install Kubernetes on AWS and OpenStack VMs.
 
 S3: after `up.sh` / `down.sh` (and kubeadm up/reset) you are asked to `push --prune`. Bucket name: `clusters/backup.yaml`.
 

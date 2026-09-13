@@ -1,8 +1,8 @@
-# AWS EC2 + kubeadm — step checklist
+# AWS EC2 — compute checklist
 
-**Goal:** A small Kubernetes cluster on EC2 that you install yourself with kubeadm (not EKS). Kind stays the free local lab.
+**Goal:** Ubuntu VMs on EC2 you can SSH to (not EKS). Kubernetes is a **separate** doc: [kubeadm.md](../../../../docs/infra/kubeadm.md).
 
-Learning notes: [docs/infra/aws.md](../../../../docs/infra/aws.md) → [aws-kubeadm.md](../../../../docs/infra/aws-kubeadm.md).
+Learning notes (compute): [docs/infra/aws.md](../../../../docs/infra/aws.md).
 
 **Apply (every Terraform step):** from `k8s-clusters/`
 
