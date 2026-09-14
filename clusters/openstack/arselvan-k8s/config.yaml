@@ -34,6 +34,9 @@ terraform:
 kubeadm:
   kubernetes_version: "1.32"
   pod_cidr: 192.168.0.0/16
+  # calico or cilium. cilium also drops kube-proxy, so changing this on a live
+  # cluster needs kubeadm/reset.sh first. See docs/cilium.md.
+  cni: calico
   # external = kubelet runs --cloud-provider=external and OCCM owns the Octavia
   # LBs, so keep octavia_lbs empty. Unset or "" = kubelet manages nothing and
   # LBs come from octavia_lbs above. See docs/infra/openstack.md.

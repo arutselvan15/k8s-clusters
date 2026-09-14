@@ -254,7 +254,7 @@ terraform -chdir=infra/terraform/environments/ec2 output
 
 **Learn:** Terraform stopped at Ubuntu VMs. Kubernetes is a **separate** step: `kubeadm/up.sh` reads `sensitive/aws/k8s-aws/cluster.env` (written by `./scripts/infra/up.sh aws k8s-aws`), not Terraform. Same minor version on every node (`kubernetes_version` / `K8S_VERSION`). Pod CIDR is `192.168.0.0/16` so it does **not** overlap the VPC `10.0.0.0/16`. `WORKER_HOSTS` is a space-separated list (one or more workers).
 
-**Created (after you finish):** kubeadm cluster; Calico CNI; `sensitive/aws/k8s-aws/kubeconfig` on the laptop.
+**Created (after you finish):** kubeadm cluster; the CNI named by `cni` (Calico by default); `sensitive/aws/k8s-aws/kubeconfig` on the laptop.
 
 No new AWS bill beyond the VMs.
 
@@ -342,6 +342,9 @@ mkdir -p "$HOME/.kube"
 sudo cp -i /etc/kubernetes/admin.conf "$HOME/.kube/config"
 sudo chown "$(id -u):$(id -g)" "$HOME/.kube/config"
 
+# This is the cni: calico default. For cni: cilium see docs/cilium.md at the
+# repo root —
+# that path also needs --skip-phases=addon/kube-proxy on the init above.
 kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.29.3/manifests/calico.yaml
 kubectl get nodes
 ```

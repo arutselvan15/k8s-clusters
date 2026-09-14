@@ -7,7 +7,7 @@ Kubernetes is a separate step using the shared kubeadm scripts ([kubeadm.md](./k
 | Layer | Command | Owns |
 |-------|---------|------|
 | Compute | `./scripts/infra/up.sh openstack <id>` | VMs, ports, security group, keypair, Octavia LBs |
-| Kubernetes | `./scripts/infra/kubeadm/up.sh openstack <id>` | kubeadm, Calico, kubeconfig |
+| Kubernetes | `./scripts/infra/kubeadm/up.sh openstack <id>` | kubeadm, CNI, kubeconfig |
 | Cloud controller (optional) | `./scripts/infra/openstack/occm.sh <id>` | `type: LoadBalancer` Services |
 
 ## Quick start
@@ -64,7 +64,8 @@ Application credentials are already project-scoped — do not add `project_name`
 | Key | Required | Details |
 |-----|----------|---------|
 | `kubernetes_version` | **required** | Minor version pinned on every node, e.g. `"1.32"`. Quote it so YAML keeps it a string. |
-| `pod_cidr` | **required** | Calico pod network. `192.168.0.0/16` avoids overlapping the AWS VPC range. |
+| `pod_cidr` | **required** | Pod network. `192.168.0.0/16` avoids overlapping the AWS VPC range. |
+| `cni` | optional | `calico` (default) or `cilium`. `cilium` also skips the kube-proxy addon, so like `cloud_provider` it is fixed at `kubeadm init` — changing it needs `kubeadm/reset.sh` first, and requires `helm` on your laptop. See [cilium.md](../cilium.md). |
 | `cloud_provider` | optional | `external` makes kubelet run `--cloud-provider=external` so OCCM can manage the nodes and create load balancers. Absent or empty means kubelet manages nothing. |
 
 ### Octavia load balancers
@@ -97,7 +98,7 @@ It needs `kubeadm.cloud_provider: external` set **before** the cluster is bootst
 ./scripts/infra/openstack/occm.sh <id>
 ```
 
-Nodes come up Ready but carry `node.cloudprovider.kubernetes.io/uninitialized:NoSchedule` until OCCM clears it, so most workloads stay Pending until that last command runs. Calico tolerates the taint, so the CNI still starts.
+Nodes come up Ready but carry `node.cloudprovider.kubernetes.io/uninitialized:NoSchedule` until OCCM clears it, so most workloads stay Pending until that last command runs. Both CNIs tolerate the taint, so the pod network still starts.
 
 `occm.sh` resolves `subnet_name` to a subnet id, writes `cloud.conf` into gitignored `sensitive/openstack/<name>/`, creates the `cloud-config` Secret from that file, and installs the chart with `secret.create=false` so the credential never enters Helm values. It is safe to re-run. Chart `2.32.0` matches Kubernetes 1.32 — the chart's major.minor tracks the Kubernetes minor; override with `OCCM_CHART_VERSION`.
 
@@ -122,7 +123,7 @@ curl -s -o /dev/null -w '%{http_code}\n' http://<external-ip>/   # 404 from the 
 
 The VIP is owned by OCCM, so recreating the Service gets a new address.
 
-**Troubleshooting.** `EXTERNAL-IP` stuck on `<pending>` with `OverQuota ... 'floatingip'` in the logs means `internal-lb=true` is missing. An LB that is `ACTIVE` while `operating_status` is `ERROR` means the health monitor cannot reach the NodePort — check `manage-security-groups=true` and that `openstack security group list | grep lb-sg` shows a group. `cloud.conf` is read at startup: `occm.sh` restarts the DaemonSet, but force a Service resync with `kubectl -n ingress-nginx annotate svc ingress-nginx-controller occm-resync="$(date +%s)" --overwrite`. `Error initialising Routes support: router-id not set` is expected and harmless, since Calico handles pod routing.
+**Troubleshooting.** `EXTERNAL-IP` stuck on `<pending>` with `OverQuota ... 'floatingip'` in the logs means `internal-lb=true` is missing. An LB that is `ACTIVE` while `operating_status` is `ERROR` means the health monitor cannot reach the NodePort — check `manage-security-groups=true` and that `openstack security group list | grep lb-sg` shows a group. `cloud.conf` is read at startup: `occm.sh` restarts the DaemonSet, but force a Service resync with `kubectl -n ingress-nginx annotate svc ingress-nginx-controller occm-resync="$(date +%s)" --overwrite`. `Error initialising Routes support: router-id not set` is expected and harmless, since the CNI handles pod routing.
 
 ```bash
 kubectl -n kube-system logs -l app=openstack-cloud-controller-manager --tail=100

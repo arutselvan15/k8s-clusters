@@ -91,23 +91,46 @@ sudo kubeadm init \
   --control-plane-endpoint="${CP_PUBLIC}:6443" \
   --apiserver-cert-extra-sans="${CP_PUBLIC}" \
   --pod-network-cidr=192.168.0.0/16
+  # with cni: cilium, add --skip-phases=addon/kube-proxy
 
 mkdir -p $HOME/.kube
 sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
-
-# Calico
-kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.29.3/manifests/calico.yaml
 kubectl get nodes
 ```
 
 Save the **`kubeadm join`** command from init output. Do not paste the token into chat or git.
 
+**Checkpoint:** Control plane node registered (still **NotReady** — no pod network yet).
+
+---
+
+## Lesson K-3 — Pod network
+
+Nodes stay **NotReady** until a CNI runs. `cni` in the cluster YAML picks which one — see [cilium.md](../cilium.md) for the trade-off. Below is the control-plane view; `kubeadm/up.sh` instead runs these from the laptop once it has the kubeconfig, so only the laptop needs Helm.
+
+```bash
+# cni: calico
+kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.29.3/manifests/calico.yaml
+
+# cni: cilium — kubeProxyReplacement needs the API endpoint directly, since
+# skipping the kube-proxy addon left no ClusterIP path to reach it.
+helm repo add cilium https://helm.cilium.io && helm repo update cilium
+helm upgrade --install cilium cilium/cilium --version 1.17.18 -n kube-system \
+  --set kubeProxyReplacement=true \
+  --set k8sServiceHost="${CP_PUBLIC}" --set k8sServicePort=6443 \
+  --set ipam.mode=kubernetes \
+  --set routingMode=tunnel --set tunnelProtocol=vxlan \
+  --set loadBalancer.mode=snat \
+  --set operator.replicas=1 \
+  --set hubble.relay.enabled=true --set hubble.ui.enabled=true
+```
+
 **Checkpoint:** Control plane node **Ready**.
 
 ---
 
-## Lesson K-3 — Join worker
+## Lesson K-4 — Join worker
 
 On **worker**:
 
@@ -126,7 +149,7 @@ kubectl get nodes
 
 ---
 
-## Lesson K-4 — kubeconfig on Mac
+## Lesson K-5 — kubeconfig on Mac
 
 From repo root on your Mac:
 

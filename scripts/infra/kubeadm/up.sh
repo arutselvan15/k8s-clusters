@@ -69,14 +69,22 @@ k8s_plat_bind_kubeadm_inventory "${PLATFORM}" "${CLUSTER}" || {
 }
 INVENTORY_FILE="${K8S_PLAT_CLUSTER_ENV}"
 
-"$REPO_ROOT/scripts/lib/require-tools.sh" ssh kubectl
 k8s_plat_load_inventory "${INVENTORY_FILE}"
+
+# helm only when the CNI needs it, so a calico cluster keeps the smaller
+# toolchain. Inventory is read first because it is what names the CNI.
+REQUIRED_TOOLS=(ssh kubectl)
+if [[ "${CNI}" == "cilium" ]]; then
+  REQUIRED_TOOLS+=(helm)
+fi
+"$REPO_ROOT/scripts/lib/require-tools.sh" "${REQUIRED_TOOLS[@]}"
 
 echo "==> kubeadm (Kubernetes v${K8S_VERSION})"
 echo "    ${K8S_PLAT_CLUSTER_PLATFORM} ${K8S_PLAT_CLUSTER_CONFIG_ID} → ${INVENTORY_FILE}"
 echo "    control-plane ${CONTROL_PLANE_HOST} (API ${CONTROL_PLANE_ENDPOINT}:6443)"
 echo "    workers       ${#WORKER_HOST_LIST[@]} (${WORKER_HOSTS:-none})"
 echo "    pod CIDR      ${POD_CIDR}"
+echo "    CNI           ${CNI} ${CNI_VERSION}"
 echo "    cloud provider ${CLOUD_PROVIDER:-none (in-tree/no cloud)}"
 
 k8s_plat_wait_ssh "${CONTROL_PLANE_HOST}"
@@ -98,7 +106,7 @@ fi
 
 echo "==> 8b kubeadm init on control plane"
 k8s_plat_ssh_script "${CONTROL_PLANE_HOST}" "${REMOTE_DIR}/init.sh" \
-  CP_PUBLIC="${CONTROL_PLANE_ENDPOINT}" POD_CIDR="${POD_CIDR}" CALICO_MANIFEST="${CALICO_MANIFEST}"
+  CP_PUBLIC="${CONTROL_PLANE_ENDPOINT}" POD_CIDR="${POD_CIDR}" CNI="${CNI}"
 
 if [[ ${#WORKER_HOST_LIST[@]} -gt 0 ]]; then
   echo "==> 8c kubeadm join (${#WORKER_HOST_LIST[@]} worker(s))"
@@ -115,24 +123,35 @@ else
   echo "==> 8c no workers in inventory; control-plane only"
 fi
 
-ready_timeout="$((300 + 60 * ${#WORKER_HOST_LIST[@]}))"
-echo "==> waiting for nodes Ready (timeout ${ready_timeout}s)"
-k8s_plat_ssh "${CONTROL_PLANE_HOST}" "kubectl wait --for=condition=Ready nodes --all --timeout=${ready_timeout}s"
-k8s_plat_ssh "${CONTROL_PLANE_HOST}" 'kubectl get nodes -o wide'
-
+# Pulled before the CNI step, which runs from here rather than on the node.
+# Joining does not need a pod network, so the workers above are already
+# registered — they just stay NotReady until 8e lands.
 echo "==> 8d kubeconfig on laptop"
 mkdir -p "$(dirname "${KUBECONFIG_FILE}")"
 k8s_plat_ssh "${CONTROL_PLANE_HOST}" 'sudo cat /etc/kubernetes/admin.conf' >"${KUBECONFIG_FILE}"
 chmod 600 "${KUBECONFIG_FILE}"
-
 export KUBECONFIG="${KUBECONFIG_FILE}"
 echo "    wrote ${KUBECONFIG_FILE}"
+
+echo "==> 8e pod network (${CNI} ${CNI_VERSION})"
+k8s_plat_install_cni "${KUBECONFIG_FILE}"
+
+ready_timeout="$((300 + 60 * ${#WORKER_HOST_LIST[@]}))"
+echo "==> waiting for nodes Ready (timeout ${ready_timeout}s)"
+kubectl wait --for=condition=Ready nodes --all --timeout="${ready_timeout}s"
 kubectl get nodes -o wide
 
 echo ""
 echo "Cluster ready (kubeadm)."
 echo "  source ${REPO_ROOT}/scripts/lib/kubeconfig-setup.sh ${KUBECONFIG_FILE}"
 echo "  kubectl get nodes"
+
+if [[ "${CNI}" == "cilium" ]]; then
+  echo ""
+  echo "Cilium serves Services in eBPF, so there is no kube-proxy DaemonSet."
+  echo "  kubectl -n kube-system exec ds/cilium -- cilium-dbg status --brief"
+  echo "  kubectl -n kube-system port-forward svc/hubble-ui 12000:80"
+fi
 
 if [[ "${CLOUD_PROVIDER}" == "external" ]]; then
   echo ""
