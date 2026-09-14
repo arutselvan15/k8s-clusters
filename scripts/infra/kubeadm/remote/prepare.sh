@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # 8a — prepare a node (control plane or worker). Streamed over SSH stdin; not copied.
-# Env: K8S_VERSION (minor, e.g. 1.32)
+# Env: K8S_VERSION (minor, e.g. 1.32), CLOUD_PROVIDER (empty, or "external")
 
 set -euo pipefail
 
 K8S_VERSION="${K8S_VERSION:-1.32}"
+CLOUD_PROVIDER="${CLOUD_PROVIDER:-}"
 export DEBIAN_FRONTEND=noninteractive
 export NEEDRESTART_MODE="${NEEDRESTART_MODE:-a}"
 
@@ -60,5 +61,17 @@ echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.
 wait_apt
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y kubelet kubeadm kubectl
 sudo apt-mark hold kubelet kubeadm kubectl
+
+# kubeadm's unit reads /etc/default/kubelet as $KUBELET_EXTRA_ARGS. Must be in
+# place before init/join, because kubelet only applies the resulting
+# node.cloudprovider.kubernetes.io/uninitialized taint at first registration.
+if [[ -n "${CLOUD_PROVIDER}" ]]; then
+  echo "KUBELET_EXTRA_ARGS=--cloud-provider=${CLOUD_PROVIDER}" | sudo tee /etc/default/kubelet >/dev/null
+  echo "    kubelet --cloud-provider=${CLOUD_PROVIDER}"
+else
+  sudo rm -f /etc/default/kubelet
+fi
+
+sudo systemctl daemon-reload
 sudo systemctl enable kubelet
 kubeadm version

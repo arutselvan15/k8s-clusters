@@ -29,14 +29,12 @@ terraform:
   # (80→30080, 443→30443). Extra LBs pick unused ports in the same range.
   # Keep these in sync with k8s-apps overlays/cluster/arselvan-k8s/*.yaml.
   octavia_lb_flavor: Octavia_2vCPUx2GB
-  octavia_lbs:
-    - name: ingress
-      http_node_port: 30080
-      https_node_port: 30443
-    - name: envoy
-      http_node_port: 30090
-      https_node_port: 30453
+  octavia_lbs: []
 
 kubeadm:
   kubernetes_version: "1.32"
   pod_cidr: 192.168.0.0/16
+  # external = kubelet runs --cloud-provider=external and OCCM owns the Octavia
+  # LBs, so keep octavia_lbs empty. Unset or "" = kubelet manages nothing and
+  # LBs come from octavia_lbs above. See docs/infra/openstack.md.
+  cloud_provider: external

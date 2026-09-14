@@ -77,11 +77,13 @@ echo "    ${K8S_PLAT_CLUSTER_PLATFORM} ${K8S_PLAT_CLUSTER_CONFIG_ID} → ${INVEN
 echo "    control-plane ${CONTROL_PLANE_HOST} (API ${CONTROL_PLANE_ENDPOINT}:6443)"
 echo "    workers       ${#WORKER_HOST_LIST[@]} (${WORKER_HOSTS:-none})"
 echo "    pod CIDR      ${POD_CIDR}"
+echo "    cloud provider ${CLOUD_PROVIDER:-none (in-tree/no cloud)}"
 
 k8s_plat_wait_ssh "${CONTROL_PLANE_HOST}"
 echo "==> 8a prepare control-plane (${CONTROL_PLANE_HOST})"
 k8s_plat_ssh_script "${CONTROL_PLANE_HOST}" "${REMOTE_DIR}/prepare.sh" \
-  DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a K8S_VERSION="${K8S_VERSION}"
+  DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a K8S_VERSION="${K8S_VERSION}" \
+  CLOUD_PROVIDER="${CLOUD_PROVIDER}"
 
 host=""
 if [[ ${#WORKER_HOST_LIST[@]} -gt 0 ]]; then
@@ -89,7 +91,8 @@ if [[ ${#WORKER_HOST_LIST[@]} -gt 0 ]]; then
     k8s_plat_wait_ssh "${host}"
     echo "==> 8a prepare worker (${host})"
     k8s_plat_ssh_script "${host}" "${REMOTE_DIR}/prepare.sh" \
-      DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a K8S_VERSION="${K8S_VERSION}"
+      DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a K8S_VERSION="${K8S_VERSION}" \
+      CLOUD_PROVIDER="${CLOUD_PROVIDER}"
   done
 fi
 
@@ -130,5 +133,12 @@ echo ""
 echo "Cluster ready (kubeadm)."
 echo "  source ${REPO_ROOT}/scripts/lib/kubeconfig-setup.sh ${KUBECONFIG_FILE}"
 echo "  kubectl get nodes"
+
+if [[ "${CLOUD_PROVIDER}" == "external" ]]; then
+  echo ""
+  echo "Nodes carry node.cloudprovider.kubernetes.io/uninitialized until a cloud"
+  echo "controller clears it, so most workloads stay Pending. Install it next:"
+  echo "  ${REPO_ROOT}/scripts/infra/openstack/occm.sh ${K8S_PLAT_CLUSTER_CONFIG_ID}"
+fi
 
 k8s_plat_s3_offer

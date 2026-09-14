@@ -39,6 +39,12 @@ tool_hint() {
     openstack)
       echo "Install python-openstackclient if you want CLI checks (optional; Terraform uses clouds.yaml)" >&2
       ;;
+    helm)
+      echo "Install Helm 3 (e.g. brew install helm)" >&2
+      ;;
+    yq)
+      echo "Install yq v4 (e.g. brew install yq)" >&2
+      ;;
   esac
 }
 

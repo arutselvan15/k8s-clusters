@@ -23,6 +23,7 @@ k8s_plat_load_inventory() {
   POD_CIDR="192.168.0.0/16"
   CALICO_MANIFEST="https://raw.githubusercontent.com/projectcalico/calico/v3.29.3/manifests/calico.yaml"
   KUBECONFIG_FILE=""
+  CLOUD_PROVIDER=""
 
   while IFS= read -r line || [[ -n "${line}" ]]; do
     case "${line}" in
@@ -33,7 +34,7 @@ k8s_plat_load_inventory() {
     key="${key%"${key##*[![:space:]]}"}"
     key="${key#"${key%%[![:space:]]*}"}"
     case "${key}" in
-      SSH_USER | SSH_KEY | CONTROL_PLANE_HOST | CONTROL_PLANE_ENDPOINT | WORKER_HOSTS | K8S_VERSION | POD_CIDR | CALICO_MANIFEST | KUBECONFIG_FILE)
+      SSH_USER | SSH_KEY | CONTROL_PLANE_HOST | CONTROL_PLANE_ENDPOINT | WORKER_HOSTS | K8S_VERSION | POD_CIDR | CALICO_MANIFEST | KUBECONFIG_FILE | CLOUD_PROVIDER)
         printf -v "${key}" '%s' "${val}"
         ;;
       CLUSTER_NAME | SSH_CONTROL_PLANE | SSH_WORKER | VPC_CIDR | NETWORK_NAME)

@@ -10,6 +10,8 @@ Two independent layers on AWS and OpenStack: **compute** (VMs) and **Kubernetes*
 
 `up.sh` never runs kubeadm. `kubeadm/up.sh` never runs Terraform.
 
+Optional on OpenStack: the Cloud Controller Manager (`./scripts/infra/openstack/occm.sh <id>`) lets `type: LoadBalancer` Services create their own Octavia LBs — see [openstack.md](./openstack.md#openstack-cloud-controller-manager-optional).
+
 ```bash
 ./scripts/infra/up.sh kind
 ./scripts/infra/up.sh aws k8s-aws
