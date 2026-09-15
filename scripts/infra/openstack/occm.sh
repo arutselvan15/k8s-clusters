@@ -11,8 +11,11 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 CLUSTER_SPEC=""
-# Chart major.minor tracks the Kubernetes minor version.
-CHART_VERSION="${OCCM_CHART_VERSION:-2.32.0}"
+# Chart major.minor tracks the Kubernetes minor version. Resolved after the
+# cluster config loads: occm_chart_version in the YAML wins over this, and the
+# OCCM_CHART_VERSION env var wins over both.
+CHART_VERSION_DEFAULT="2.32.0"
+CHART_VERSION=""
 CHART_REPO="https://kubernetes.github.io/cloud-provider-openstack"
 
 usage() {
@@ -25,7 +28,8 @@ cloud-config Secret, and installs openstack-cloud-controller-manager.
   cluster   id or path. clusters/openstack/<id>/config.yaml
 
 Env:
-  OCCM_CHART_VERSION   chart version (default ${CHART_VERSION}; 2.x tracks k8s 1.x)
+  OCCM_CHART_VERSION   chart version, overrides kubeadm.occm_chart_version in
+                       the cluster YAML (default ${CHART_VERSION_DEFAULT}; 2.x tracks k8s 1.x)
 
 Safe to re-run: the Secret and the Helm release are both upserted.
 EOF
@@ -46,6 +50,9 @@ source "$REPO_ROOT/scripts/lib/os-env.sh"
 k8s_plat_resolve_cluster_config openstack "${CLUSTER_SPEC}"
 k8s_plat_apply_cluster_outputs
 k8s_plat_require_os_credentials
+
+CHART_VERSION="${OCCM_CHART_VERSION:-$(k8s_plat_yaml_get "${K8S_PLAT_CLUSTER_CONFIG}" occm_chart_version || true)}"
+CHART_VERSION="${CHART_VERSION:-${CHART_VERSION_DEFAULT}}"
 
 CLOUD_PROVIDER="$(k8s_plat_yaml_get "${K8S_PLAT_CLUSTER_CONFIG}" cloud_provider || true)"
 if [[ "${CLOUD_PROVIDER}" != "external" ]]; then

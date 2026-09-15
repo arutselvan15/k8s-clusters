@@ -165,6 +165,19 @@ k8s_plat_apply_cluster_outputs() {
   echo "    outputs ${K8S_PLAT_CLUSTER_DIR}"
 }
 
+# Pod network settings from the cluster YAML, as cluster.env lines. Shared by
+# the aws and openstack Day 0 scripts so the two cannot drift. Every key is
+# optional: an absent one prints empty and kubeadm/lib.sh supplies the default.
+k8s_plat_cni_env_lines() {
+  local yaml="${K8S_PLAT_CLUSTER_CONFIG:?cluster config not resolved}"
+  local key upper
+  for key in cni calico_version cilium_version cilium_kube_proxy_replacement \
+    cilium_tunnel_protocol cilium_hubble cilium_operator_replicas; do
+    upper="$(printf '%s' "${key}" | tr '[:lower:]' '[:upper:]')"
+    printf '%s=%s\n' "${upper}" "$(k8s_plat_yaml_get "${yaml}" "${key}" || true)"
+  done
+}
+
 # After terraform destroy succeeds (or there is nothing left to destroy):
 # remove this cluster's outputs. Do not archive locally — S3 (and bucket
 # versioning) is the backup. Never touches aws/credentials, cli.conf, or

@@ -7,10 +7,20 @@
 ```yaml
 kubeadm:
   pod_cidr: 192.168.0.0/16
-  cni: calico        # or cilium
+
+  cni: calico                            # or cilium
+  calico_version: "3.29.3"               # manifest tag, used when cni: calico
+  cilium_version: "1.17.18"              # chart version, used when cni: cilium
+
+  cilium_kube_proxy_replacement: true    # Services in eBPF, no kube-proxy
+  cilium_tunnel_protocol: vxlan          # or geneve
+  cilium_hubble: true                    # relay + UI
+  cilium_operator_replicas: 1
 ```
 
-Fixed at `kubeadm init`, exactly like `cloud_provider`: `cilium` skips the kube-proxy addon, and that phase does not run twice. Changing `cni` on a live cluster means rebuilding the Kubernetes layer (the VMs stay up):
+Both versions stay pinned, so flipping `cni` needs no other edit — the `cilium_*` keys are simply ignored under `calico`. Every key is optional and validated when the inventory loads, so a typo fails before kubeadm or Helm runs. Defaults live in [`kubeadm/lib.sh`](../scripts/infra/kubeadm/lib.sh).
+
+`cilium_kube_proxy_replacement` is the one value fixed at bootstrap, exactly like `cloud_provider`: it adds `--skip-phases=addon/kube-proxy` to `kubeadm init`, and that phase does not run twice. Changing it — or `cni` itself — on a live cluster means rebuilding the Kubernetes layer (the VMs stay up):
 
 ```bash
 ./scripts/infra/up.sh            openstack <id>   # rewrites cluster.env
@@ -37,17 +47,17 @@ Fixed at `kubeadm init`, exactly like `cloud_provider`: `cilium` skips the kube-
 
 **Reasons to stay on calico:** it is one `kubectl apply` with no Helm dependency, iptables is far easier to reason about than eBPF maps, and it is what most enterprise clusters ship. Transparent WireGuard encryption is a wash — both have it.
 
-### Settings that are specific to this lab
+### Settings that are deliberately not configurable
 
-Set in `k8s_plat_install_cilium` ([kubeadm/lib.sh](../scripts/infra/kubeadm/lib.sh)):
+Three Helm values stay pinned in `k8s_plat_install_cilium` ([kubeadm/lib.sh](../scripts/infra/kubeadm/lib.sh)) because on this lab they are correctness constraints, not preferences. A cluster YAML key for them would only be a way to break the cluster quietly:
 
-- `kubeProxyReplacement=true` with `k8sServiceHost`/`k8sServicePort` — with no kube-proxy there is no ClusterIP path to the API server, so the agent needs the endpoint directly.
 - `loadBalancer.mode=snat` — **do not switch to DSR.** DSR answers the client with the VIP as source address, and Neutron port security drops packets a port is not allowed to source. Same root cause as the BGP problem below.
-- `routingMode=tunnel` / `tunnelProtocol=vxlan` — the pod CIDR is not routable on the tenant network, so it has to be encapsulated. Calico's IPIP does the same job.
+- `routingMode=tunnel` — the pod CIDR is not routable on the tenant network, so it has to be encapsulated. Only the protocol is a real choice, which is why `cilium_tunnel_protocol` exists and `routingMode` does not. Calico's IPIP does the same job.
 - `ipam.mode=kubernetes` — honours `pod_cidr` via the per-node `podCIDR` kubeadm hands out.
-- `operator.replicas=1` — the default 2 cannot spread on a one-worker lab.
 
-`hubble-relay` and `hubble-ui` ship without control-plane tolerations, so on a `worker_nodes: 0` cluster they stay Pending forever. That is why the install gates on `rollout status daemonset/cilium` instead of `helm --wait`, which would block on them.
+`k8sServiceHost`/`k8sServicePort` are always set: whenever kube-proxy is replaced there is no ClusterIP path left to reach the API server through.
+
+`hubble-relay` and `hubble-ui` ship without control-plane tolerations, so on a `worker_nodes: 0` cluster they stay Pending forever — set `cilium_hubble: false` there. That is also why the install gates on `rollout status daemonset/cilium` instead of `helm --wait`, which would block on them.
 
 No security group change was needed for either CNI: the `self` rule in [main.tf](../infra/terraform/environments/openstack/main.tf) already allows every protocol within the group, covering VXLAN 8472, Cilium health 4240, and Calico's IPIP (protocol 4).
 

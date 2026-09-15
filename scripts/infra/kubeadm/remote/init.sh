@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 8b — kubeadm init on the control plane. Streamed over SSH stdin; not copied.
-# Env: CP_PUBLIC, POD_CIDR, CNI
+# Env: CP_PUBLIC, POD_CIDR, CNI, KUBE_PROXY_REPLACEMENT
 #
 # The pod network is installed later, from the laptop (kubeadm/lib.sh), so this
 # only has to get the API server up.
@@ -10,6 +10,7 @@ set -euo pipefail
 : "${CP_PUBLIC:?CP_PUBLIC is the control-plane public IP}"
 POD_CIDR="${POD_CIDR:-192.168.0.0/16}"
 CNI="${CNI:-calico}"
+KUBE_PROXY_REPLACEMENT="${KUBE_PROXY_REPLACEMENT:-true}"
 
 mkdir -p "${HOME}/.kube"
 
@@ -21,10 +22,11 @@ else
     --apiserver-cert-extra-sans="${CP_PUBLIC}"
     --pod-network-cidr="${POD_CIDR}"
   )
-  # Cilium serves Services from eBPF, so kube-proxy must never be installed —
-  # the two would program the same traffic twice. Like cloud_provider this is
-  # fixed at init: changing cni on a live cluster needs kubeadm/reset.sh first.
-  if [[ "${CNI}" == "cilium" ]]; then
+  # With cilium_kube_proxy_replacement, cilium serves Services from eBPF and
+  # kube-proxy must never be installed — the two would program the same traffic
+  # twice. Like cloud_provider this is fixed at init: changing either value on a
+  # live cluster needs kubeadm/reset.sh first.
+  if [[ "${CNI}" == "cilium" && "${KUBE_PROXY_REPLACEMENT}" == "true" ]]; then
     init_args+=(--skip-phases=addon/kube-proxy)
     echo "    kube-proxy addon skipped (cilium kubeProxyReplacement)"
   fi

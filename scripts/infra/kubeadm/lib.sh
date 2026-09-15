@@ -4,6 +4,49 @@
 
 : "${REPO_ROOT:?REPO_ROOT must be set before sourcing kubeadm/lib.sh}"
 
+# k8s_plat_enum_ok <key> <value> <allowed...>
+k8s_plat_enum_ok() {
+  local key="$1"
+  local value="$2"
+  shift 2
+  local allowed
+  for allowed in "$@"; do
+    if [[ "${value}" == "${allowed}" ]]; then
+      return 0
+    fi
+  done
+  echo "${key} must be one of: $* (got '${value}')" >&2
+  return 1
+}
+
+# Fill in whatever the cluster YAML left out, then reject bad values here rather
+# than letting kubeadm or helm fail halfway through a build. Callers add the
+# file path to the error.
+k8s_plat_resolve_cni() {
+  CNI="${CNI:-calico}"
+  CALICO_VERSION="${CALICO_VERSION:-3.29.3}"
+  CILIUM_VERSION="${CILIUM_VERSION:-1.17.18}"
+  CILIUM_KUBE_PROXY_REPLACEMENT="${CILIUM_KUBE_PROXY_REPLACEMENT:-true}"
+  CILIUM_TUNNEL_PROTOCOL="${CILIUM_TUNNEL_PROTOCOL:-vxlan}"
+  CILIUM_HUBBLE="${CILIUM_HUBBLE:-true}"
+  CILIUM_OPERATOR_REPLICAS="${CILIUM_OPERATOR_REPLICAS:-1}"
+
+  k8s_plat_enum_ok cni "${CNI}" calico cilium || return 1
+  k8s_plat_enum_ok cilium_kube_proxy_replacement "${CILIUM_KUBE_PROXY_REPLACEMENT}" true false || return 1
+  k8s_plat_enum_ok cilium_tunnel_protocol "${CILIUM_TUNNEL_PROTOCOL}" vxlan geneve || return 1
+  k8s_plat_enum_ok cilium_hubble "${CILIUM_HUBBLE}" true false || return 1
+  if [[ ! "${CILIUM_OPERATOR_REPLICAS}" =~ ^[1-9][0-9]*$ ]]; then
+    echo "cilium_operator_replicas must be a positive integer (got '${CILIUM_OPERATOR_REPLICAS}')" >&2
+    return 1
+  fi
+
+  # Version of the selected CNI, so callers do not switch on CNI again.
+  case "${CNI}" in
+    calico) CNI_VERSION="${CALICO_VERSION}" ;;
+    cilium) CNI_VERSION="${CILIUM_VERSION}" ;;
+  esac
+}
+
 k8s_plat_load_inventory() {
   local file="$1"
   local line key val
@@ -21,8 +64,15 @@ k8s_plat_load_inventory() {
   WORKER_HOSTS=""
   K8S_VERSION="1.32"
   POD_CIDR="192.168.0.0/16"
-  CNI="calico"
-  CNI_VERSION=""
+  # Every CNI key may be absent from cluster.env: the cluster YAML owns them,
+  # and anything left out falls back to the defaults applied below.
+  CNI=""
+  CALICO_VERSION=""
+  CILIUM_VERSION=""
+  CILIUM_KUBE_PROXY_REPLACEMENT=""
+  CILIUM_TUNNEL_PROTOCOL=""
+  CILIUM_HUBBLE=""
+  CILIUM_OPERATOR_REPLICAS=""
   KUBECONFIG_FILE=""
   CLOUD_PROVIDER=""
 
@@ -35,7 +85,8 @@ k8s_plat_load_inventory() {
     key="${key%"${key##*[![:space:]]}"}"
     key="${key#"${key%%[![:space:]]*}"}"
     case "${key}" in
-      SSH_USER | SSH_KEY | CONTROL_PLANE_HOST | CONTROL_PLANE_ENDPOINT | WORKER_HOSTS | K8S_VERSION | POD_CIDR | CNI | CNI_VERSION | KUBECONFIG_FILE | CLOUD_PROVIDER)
+      SSH_USER | SSH_KEY | CONTROL_PLANE_HOST | CONTROL_PLANE_ENDPOINT | WORKER_HOSTS | K8S_VERSION | POD_CIDR | KUBECONFIG_FILE | CLOUD_PROVIDER | \
+        CNI | CALICO_VERSION | CILIUM_VERSION | CILIUM_KUBE_PROXY_REPLACEMENT | CILIUM_TUNNEL_PROTOCOL | CILIUM_HUBBLE | CILIUM_OPERATOR_REPLICAS)
         printf -v "${key}" '%s' "${val}"
         ;;
       CLUSTER_NAME | SSH_CONTROL_PLANE | SSH_WORKER | VPC_CIDR | NETWORK_NAME)
@@ -48,16 +99,10 @@ k8s_plat_load_inventory() {
 
   CONTROL_PLANE_ENDPOINT="${CONTROL_PLANE_ENDPOINT:-${CONTROL_PLANE_HOST}}"
 
-  # Pinned per CNI: calico is a manifest tag, cilium a chart version.
-  CNI="${CNI:-calico}"
-  case "${CNI}" in
-    calico) CNI_VERSION="${CNI_VERSION:-3.29.3}" ;;
-    cilium) CNI_VERSION="${CNI_VERSION:-1.17.18}" ;;
-    *)
-      echo "CNI must be calico or cilium, got '${CNI}' (${file})" >&2
-      return 1
-      ;;
-  esac
+  k8s_plat_resolve_cni || {
+    echo "  in ${file}" >&2
+    return 1
+  }
 
   if [[ -z "${CONTROL_PLANE_HOST}" || "${CONTROL_PLANE_HOST}" == "REPLACE_ME" ]]; then
     echo "Set CONTROL_PLANE_HOST in ${file}" >&2
@@ -144,48 +189,47 @@ k8s_plat_ssh_script() {
 # kubeadm/kubelet/kubectl. Nodes stay NotReady until this succeeds.
 k8s_plat_install_cni() {
   local kubeconfig="$1"
-  case "${CNI}" in
-    calico)
-      KUBECONFIG="${kubeconfig}" kubectl apply -f \
-        "https://raw.githubusercontent.com/projectcalico/calico/v${CNI_VERSION}/manifests/calico.yaml"
-      ;;
-    cilium)
-      k8s_plat_install_cilium "${kubeconfig}"
-      ;;
-    *)
-      echo "Unknown CNI: ${CNI}" >&2
-      return 1
-      ;;
-  esac
+  if [[ "${CNI}" == "cilium" ]]; then
+    k8s_plat_install_cilium "${kubeconfig}"
+    return
+  fi
+  KUBECONFIG="${kubeconfig}" kubectl apply -f \
+    "https://raw.githubusercontent.com/projectcalico/calico/v${CALICO_VERSION}/manifests/calico.yaml"
 }
 
-# kubeProxyReplacement leaves no kube-proxy to reach the API through, so the
-# agent needs the endpoint directly. loadBalancer.mode stays snat: DSR answers
-# clients with the VIP as source address, which Neutron port security drops on
-# the OpenStack tenant network (docs/cilium.md). Tunnel mode because the pod
-# CIDR is not routable on that network either.
+# Tunables come from the cluster YAML. Three values are deliberately NOT
+# configurable, because on this lab they are correctness constraints:
+#
+#   loadBalancer.mode=snat  DSR answers clients with the VIP as source address,
+#                           which Neutron port security drops (docs/cilium.md).
+#   routingMode=tunnel      the pod CIDR is not routable on the tenant network.
+#   ipam.mode=kubernetes    honours pod_cidr via the podCIDR kubeadm assigns.
+#
+# k8sServiceHost/Port are needed whenever kube-proxy is replaced, since there is
+# then no ClusterIP path left to reach the API server through.
 k8s_plat_install_cilium() {
   local kubeconfig="$1"
   helm repo add cilium https://helm.cilium.io >/dev/null 2>&1 || true
   helm repo update cilium >/dev/null
 
   KUBECONFIG="${kubeconfig}" helm upgrade --install cilium cilium/cilium \
-    --version "${CNI_VERSION}" \
+    --version "${CILIUM_VERSION}" \
     --namespace kube-system \
-    --set kubeProxyReplacement=true \
+    --set kubeProxyReplacement="${CILIUM_KUBE_PROXY_REPLACEMENT}" \
     --set k8sServiceHost="${CONTROL_PLANE_ENDPOINT}" \
     --set k8sServicePort=6443 \
     --set ipam.mode=kubernetes \
     --set routingMode=tunnel \
-    --set tunnelProtocol=vxlan \
+    --set tunnelProtocol="${CILIUM_TUNNEL_PROTOCOL}" \
     --set loadBalancer.mode=snat \
-    --set operator.replicas=1 \
-    --set hubble.relay.enabled=true \
-    --set hubble.ui.enabled=true
+    --set operator.replicas="${CILIUM_OPERATOR_REPLICAS}" \
+    --set hubble.relay.enabled="${CILIUM_HUBBLE}" \
+    --set hubble.ui.enabled="${CILIUM_HUBBLE}"
 
   # No helm --wait: it would also block on hubble-relay and hubble-ui, which
   # have no control-plane toleration and stay Pending on a worker_nodes: 0
-  # cluster. The agent DaemonSet is what makes nodes Ready, so gate on that.
+  # cluster (set cilium_hubble: false there). The agent DaemonSet is what makes
+  # nodes Ready, so gate on that.
   KUBECONFIG="${kubeconfig}" kubectl -n kube-system rollout status \
     daemonset/cilium --timeout=5m
 }

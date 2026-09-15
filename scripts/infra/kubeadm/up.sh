@@ -106,7 +106,8 @@ fi
 
 echo "==> 8b kubeadm init on control plane"
 k8s_plat_ssh_script "${CONTROL_PLANE_HOST}" "${REMOTE_DIR}/init.sh" \
-  CP_PUBLIC="${CONTROL_PLANE_ENDPOINT}" POD_CIDR="${POD_CIDR}" CNI="${CNI}"
+  CP_PUBLIC="${CONTROL_PLANE_ENDPOINT}" POD_CIDR="${POD_CIDR}" CNI="${CNI}" \
+  KUBE_PROXY_REPLACEMENT="${CILIUM_KUBE_PROXY_REPLACEMENT}"
 
 if [[ ${#WORKER_HOST_LIST[@]} -gt 0 ]]; then
   echo "==> 8c kubeadm join (${#WORKER_HOST_LIST[@]} worker(s))"
@@ -133,7 +134,7 @@ chmod 600 "${KUBECONFIG_FILE}"
 export KUBECONFIG="${KUBECONFIG_FILE}"
 echo "    wrote ${KUBECONFIG_FILE}"
 
-echo "==> 8e pod network (${CNI} ${CNI_VERSION})"
+echo "==> 8e pod network (${CNI})"
 k8s_plat_install_cni "${KUBECONFIG_FILE}"
 
 ready_timeout="$((300 + 60 * ${#WORKER_HOST_LIST[@]}))"
@@ -148,9 +149,10 @@ echo "  kubectl get nodes"
 
 if [[ "${CNI}" == "cilium" ]]; then
   echo ""
-  echo "Cilium serves Services in eBPF, so there is no kube-proxy DaemonSet."
   echo "  kubectl -n kube-system exec ds/cilium -- cilium-dbg status --brief"
-  echo "  kubectl -n kube-system port-forward svc/hubble-ui 12000:80"
+  if [[ "${CILIUM_HUBBLE}" == "true" ]]; then
+    echo "  kubectl -n kube-system port-forward svc/hubble-ui 12000:80"
+  fi
 fi
 
 if [[ "${CLOUD_PROVIDER}" == "external" ]]; then

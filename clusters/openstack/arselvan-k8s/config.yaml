@@ -34,10 +34,23 @@ terraform:
 kubeadm:
   kubernetes_version: "1.32"
   pod_cidr: 192.168.0.0/16
-  # calico or cilium. cilium also drops kube-proxy, so changing this on a live
-  # cluster needs kubeadm/reset.sh first. See docs/cilium.md.
+
+  # Pod network. Key reference: docs/infra/openstack.md, trade-offs:
+  # docs/cilium.md. Both versions stay pinned and cilium_* is ignored under
+  # calico, so flipping cni needs no other edit here.
   cni: calico
+  calico_version: "3.29.3"
+  cilium_version: "1.17.18"
+  # Decided at kubeadm init (--skip-phases=addon/kube-proxy), so this one needs
+  # kubeadm/reset.sh to change — same as cloud_provider below.
+  cilium_kube_proxy_replacement: true
+  cilium_tunnel_protocol: vxlan
+  # false when worker_nodes is 0: relay and UI do not tolerate the CP taint.
+  cilium_hubble: true
+  cilium_operator_replicas: 1
+
   # external = kubelet runs --cloud-provider=external and OCCM owns the Octavia
   # LBs, so keep octavia_lbs empty. Unset or "" = kubelet manages nothing and
   # LBs come from octavia_lbs above. See docs/infra/openstack.md.
   cloud_provider: external
+  occm_chart_version: "2.32.0"
