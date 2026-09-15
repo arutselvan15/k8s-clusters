@@ -8,7 +8,7 @@ cluster_name: arselvan-k8s
 cloud: openstack
 
 terraform:
-  worker_nodes: 1
+  worker_nodes: 2
   ssh_user: ubuntu
   ssh_port: 22
   kubernetes_api_port: 6443
