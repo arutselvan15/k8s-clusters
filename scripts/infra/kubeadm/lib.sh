@@ -32,11 +32,11 @@ k8s_plat_resolve_cni() {
   CILIUM_OPERATOR_REPLICAS="${CILIUM_OPERATOR_REPLICAS:-1}"
 
   k8s_plat_enum_ok cni "${CNI}" calico cilium || return 1
-  k8s_plat_enum_ok cilium_kube_proxy_replacement "${CILIUM_KUBE_PROXY_REPLACEMENT}" true false || return 1
-  k8s_plat_enum_ok cilium_tunnel_protocol "${CILIUM_TUNNEL_PROTOCOL}" vxlan geneve || return 1
-  k8s_plat_enum_ok cilium_hubble "${CILIUM_HUBBLE}" true false || return 1
+  k8s_plat_enum_ok kubeadm.cilium.kube_proxy_replacement "${CILIUM_KUBE_PROXY_REPLACEMENT}" true false || return 1
+  k8s_plat_enum_ok kubeadm.cilium.tunnel_protocol "${CILIUM_TUNNEL_PROTOCOL}" vxlan geneve || return 1
+  k8s_plat_enum_ok kubeadm.cilium.hubble "${CILIUM_HUBBLE}" true false || return 1
   if [[ ! "${CILIUM_OPERATOR_REPLICAS}" =~ ^[1-9][0-9]*$ ]]; then
-    echo "cilium_operator_replicas must be a positive integer (got '${CILIUM_OPERATOR_REPLICAS}')" >&2
+    echo "kubeadm.cilium.operator_replicas must be a positive integer (got '${CILIUM_OPERATOR_REPLICAS}')" >&2
     return 1
   fi
 
@@ -228,8 +228,8 @@ k8s_plat_install_cilium() {
 
   # No helm --wait: it would also block on hubble-relay and hubble-ui, which
   # have no control-plane toleration and stay Pending on a worker_nodes: 0
-  # cluster (set cilium_hubble: false there). The agent DaemonSet is what makes
-  # nodes Ready, so gate on that.
+  # cluster (set kubeadm.cilium.hubble: false there). The agent DaemonSet is
+  # what makes nodes Ready, so gate on that.
   KUBECONFIG="${kubeconfig}" kubectl -n kube-system rollout status \
     daemonset/cilium --timeout=5m
 }

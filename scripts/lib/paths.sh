@@ -80,33 +80,36 @@ def parse_scalar(raw):
 
 def load_simple(path):
     data = {}
-    section = None
+    # (indent, dict) stack for arbitrarily nested mappings; root is indent -1.
+    stack = [(-1, data)]
     with open(path, encoding="utf-8") as handle:
         for raw in handle:
             line = raw.rstrip("\n")
             if not line.strip() or line.lstrip().startswith("#"):
                 continue
-            indent = len(line) - len(line.lstrip(" "))
-            # Nested lists (octavia_lbs items) are parsed elsewhere; skip them here.
-            if indent not in (0, 2):
-                continue
             stripped = line.strip()
-            if ":" not in stripped:
+            # List items (octavia_lbs entries) are parsed elsewhere; skip them here.
+            if stripped.startswith("- "):
+                continue
+            indent = len(line) - len(line.lstrip(" "))
+            if indent % 2 != 0 or ":" not in stripped:
                 sys.exit(1)
             name, rest = stripped.split(":", 1)
             name = name.strip()
             rest = rest.strip()
-            if indent == 0:
-                if rest == "":
-                    section = name
-                    data[section] = {}
-                else:
-                    section = None
-                    data[name] = parse_scalar(rest)
+
+            while stack and indent <= stack[-1][0]:
+                stack.pop()
+            if not stack or not isinstance(stack[-1][1], dict):
+                sys.exit(1)
+            parent = stack[-1][1]
+
+            if rest == "":
+                child = {}
+                parent[name] = child
+                stack.append((indent, child))
             else:
-                if section is None or not isinstance(data.get(section), dict):
-                    sys.exit(1)
-                data[section][name] = parse_scalar(rest)
+                parent[name] = parse_scalar(rest)
     return data
 
 

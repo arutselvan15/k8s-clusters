@@ -66,16 +66,16 @@ Application credentials are already project-scoped — do not add `project_name`
 | `kubernetes_version` | **required** | Minor version pinned on every node, e.g. `"1.32"`. Quote it so YAML keeps it a string. |
 | `pod_cidr` | **required** | Pod network. `192.168.0.0/16` avoids overlapping the AWS VPC range. |
 | `cni` | optional | `calico` (default) or `cilium`. `cilium` needs `helm` on your laptop. See [cilium.md](../cilium.md). |
-| `calico_version` | optional | Manifest tag, no leading `v`. Default `3.29.3`. Used only when `cni: calico`. |
-| `cilium_version` | optional | Chart version from `helm.cilium.io`. Default `1.17.18`; major.minor must support `kubernetes_version`. Used only when `cni: cilium`. |
-| `cilium_kube_proxy_replacement` | optional | `true` (default) or `false`. Serves Services from eBPF and adds `--skip-phases=addon/kube-proxy` to `kubeadm init`, so like `cloud_provider` it is fixed at bootstrap — changing it needs `kubeadm/reset.sh` first. |
-| `cilium_tunnel_protocol` | optional | `vxlan` (default) or `geneve`. Encapsulation itself is not optional: the pod CIDR is not routable on the tenant network. |
-| `cilium_hubble` | optional | `true` (default) or `false`. Installs the Hubble relay and UI. Set `false` when `worker_nodes` is `0` — neither tolerates the control-plane taint, so both would sit Pending. |
-| `cilium_operator_replicas` | optional | Positive integer, default `1`. The chart default of `2` cannot spread on a one-worker lab. |
+| `calico.version` | optional | Manifest tag, no leading `v`. Default `3.29.3`. Used only when `cni: calico`. |
+| `cilium.version` | optional | Chart version from `helm.cilium.io`. Default `1.17.18`; major.minor must support `kubernetes_version`. Used only when `cni: cilium`. |
+| `cilium.kube_proxy_replacement` | optional | `true` (default) or `false`. Serves Services from eBPF and adds `--skip-phases=addon/kube-proxy` to `kubeadm init`, so like `cloud_provider` it is fixed at bootstrap — changing it needs `kubeadm/reset.sh` first. |
+| `cilium.tunnel_protocol` | optional | `vxlan` (default) or `geneve`. Encapsulation itself is not optional: the pod CIDR is not routable on the tenant network. |
+| `cilium.hubble` | optional | `true` (default) or `false`. Installs the Hubble relay and UI. Set `false` when `worker_nodes` is `0` — neither tolerates the control-plane taint, so both would sit Pending. |
+| `cilium.operator_replicas` | optional | Positive integer, default `1`. The chart default of `2` cannot spread on a one-worker lab. |
 | `cloud_provider` | optional | `external` makes kubelet run `--cloud-provider=external` so OCCM can manage the nodes and create load balancers. Absent or empty means kubelet manages nothing. |
 | `occm_chart_version` | optional | `openstack-cloud-controller-manager` chart, default `2.32.0`, major.minor tracking `kubernetes_version`. Only read when `cloud_provider: external`. The `OCCM_CHART_VERSION` env var overrides it. |
 
-Every `cni*` key is optional and validated at load, so a bad value fails before Terraform or kubeadm runs rather than halfway through. The `cilium_*` keys are ignored when `cni: calico`, which means you can flip `cni` without editing anything else.
+Every `cni*` key is optional and validated at load, so a bad value fails before Terraform or kubeadm runs rather than halfway through. The `cilium.*` keys are ignored when `cni: calico`, which means you can flip `cni` without editing anything else.
 
 ### Octavia load balancers
 

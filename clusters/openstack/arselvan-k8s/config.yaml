@@ -39,18 +39,20 @@ kubeadm:
   pod_cidr: 192.168.0.0/16
 
   # Pod network. Key reference: docs/infra/openstack.md, trade-offs:
-  # docs/cilium.md. Both versions stay pinned and cilium_* is ignored under
-  # calico, so flipping cni needs no other edit here.
+  # docs/cilium.md. Both blocks stay pinned and kubeadm.cilium.* is ignored
+  # under calico, so flipping cni needs no other edit here.
   cni: calico
-  calico_version: "3.29.3"
-  cilium_version: "1.17.18"
-  # Decided at kubeadm init (--skip-phases=addon/kube-proxy), so this one needs
-  # kubeadm/reset.sh to change — same as cloud_provider below.
-  cilium_kube_proxy_replacement: true
-  cilium_tunnel_protocol: vxlan
-  # false when worker_nodes is 0: relay and UI do not tolerate the CP taint.
-  cilium_hubble: true
-  cilium_operator_replicas: 1
+  calico:
+    version: "3.29.3"
+  cilium:
+    version: "1.17.18"
+    # Decided at kubeadm init (--skip-phases=addon/kube-proxy), so this one
+    # needs kubeadm/reset.sh to change — same as cloud_provider below.
+    kube_proxy_replacement: true
+    tunnel_protocol: vxlan
+    # false when worker_nodes is 0: relay and UI do not tolerate the CP taint.
+    hubble: true
+    operator_replicas: 1
 
   # external = kubelet runs --cloud-provider=external and OCCM owns the Octavia
   # LBs, so keep octavia_lbs empty. Unset or "" = kubelet manages nothing and

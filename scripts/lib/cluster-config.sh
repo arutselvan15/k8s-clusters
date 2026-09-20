@@ -170,11 +170,18 @@ k8s_plat_apply_cluster_outputs() {
 # optional: an absent one prints empty and kubeadm/lib.sh supplies the default.
 k8s_plat_cni_env_lines() {
   local yaml="${K8S_PLAT_CLUSTER_CONFIG:?cluster config not resolved}"
-  local key upper
-  for key in cni calico_version cilium_version cilium_kube_proxy_replacement \
-    cilium_tunnel_protocol cilium_hubble cilium_operator_replicas; do
-    upper="$(printf '%s' "${key}" | tr '[:lower:]' '[:upper:]')"
-    printf '%s=%s\n' "${upper}" "$(k8s_plat_yaml_get "${yaml}" "${key}" || true)"
+  local pair path envname
+  for pair in \
+    "kubeadm.cni=CNI" \
+    "kubeadm.calico.version=CALICO_VERSION" \
+    "kubeadm.cilium.version=CILIUM_VERSION" \
+    "kubeadm.cilium.kube_proxy_replacement=CILIUM_KUBE_PROXY_REPLACEMENT" \
+    "kubeadm.cilium.tunnel_protocol=CILIUM_TUNNEL_PROTOCOL" \
+    "kubeadm.cilium.hubble=CILIUM_HUBBLE" \
+    "kubeadm.cilium.operator_replicas=CILIUM_OPERATOR_REPLICAS"; do
+    path="${pair%%=*}"
+    envname="${pair#*=}"
+    printf '%s=%s\n' "${envname}" "$(k8s_plat_yaml_get "${yaml}" "${path}" || true)"
   done
 }
 
