@@ -8,7 +8,7 @@ Kubernetes is a separate step using the shared kubeadm scripts ([kubeadm.md](./k
 |-------|---------|------|
 | Compute | `./scripts/infra/up.sh openstack <id>` | VMs, ports, security group, keypair, Octavia LBs |
 | Kubernetes | `./scripts/infra/kubeadm/up.sh openstack <id>` | kubeadm, CNI, kubeconfig |
-| Cloud controller (optional) | `./scripts/infra/openstack/occm.sh <id>` | `type: LoadBalancer` Services |
+| Cloud controller | Installed automatically by kubeadm when `cloud_provider: external` | `type: LoadBalancer` Services |
 
 ## Quick start
 
@@ -19,7 +19,7 @@ chmod 600 sensitive/openstack/clouds.yaml
 # set image.name, node_flavor, network_name in clusters/openstack/<id>/config.yaml
 
 ./scripts/infra/up.sh openstack <id>              # VMs. Done when SSH works.
-./scripts/infra/kubeadm/up.sh openstack <id>      # Kubernetes. Done when nodes are Ready.
+./scripts/infra/kubeadm/up.sh openstack <id>      # Kubernetes, CNI, and OCCM when enabled.
 source scripts/lib/kubeconfig-setup.sh sensitive/openstack/<id>/kubeconfig
 ```
 
@@ -94,7 +94,7 @@ VIPs land in `cluster.env` as `OCTAVIA_LB_VIP_<NAME>`, plus `INGRESS_LB_VIP` whe
 
 > **Pick one owner for load balancers.** Either list them under `octavia_lbs` with fixed NodePorts, or set `cloud_provider: external` and let OCCM create them per Service. Doing both double-books the quota.
 
-## OpenStack Cloud Controller Manager (optional)
+## OpenStack Cloud Controller Manager
 
 OCCM lets a `type: LoadBalancer` Service create its own Octavia LB and receive the VIP as an external IP, instead of you pre-declaring LBs in Terraform. Without it, `type: LoadBalancer` stays `<pending>` forever.
 
@@ -104,10 +104,10 @@ It needs `kubeadm.cloud_provider: external` set **before** the cluster is bootst
 ./scripts/infra/up.sh            openstack <id>   # rewrites cluster.env
 ./scripts/infra/kubeadm/reset.sh openstack <id>
 ./scripts/infra/kubeadm/up.sh    openstack <id>
-./scripts/infra/openstack/occm.sh <id>
+./scripts/infra/openstack/occm.sh <id>             # only needed for a manual re-run/recovery
 ```
 
-Nodes come up Ready but carry `node.cloudprovider.kubernetes.io/uninitialized:NoSchedule` until OCCM clears it, so most workloads stay Pending until that last command runs. Both CNIs tolerate the taint, so the pod network still starts.
+When `cloud_provider: external` is configured, kubeadm/up installs OCCM after the nodes and CNI are ready. OCCM then clears `node.cloudprovider.kubernetes.io/uninitialized:NoSchedule`. The standalone command remains available for a manual re-run or recovery. Both CNIs tolerate the taint, so the pod network still starts.
 
 `occm.sh` resolves `subnet_name` to a subnet id, writes `cloud.conf` into gitignored `sensitive/openstack/<name>/`, creates the `cloud-config` Secret from that file, and installs the chart with `secret.create=false` so the credential never enters Helm values. It is safe to re-run. Chart `2.32.0` matches Kubernetes 1.32 — the chart's major.minor tracks the Kubernetes minor; override with `OCCM_CHART_VERSION`.
 

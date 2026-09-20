@@ -71,6 +71,12 @@ INVENTORY_FILE="${K8S_PLAT_CLUSTER_ENV}"
 
 k8s_plat_load_inventory "${INVENTORY_FILE}"
 
+if [[ "${CLOUD_PROVIDER}" == "external" && "${PLATFORM}" != "openstack" ]]; then
+  echo "cloud_provider=external is currently supported only for OpenStack." >&2
+  echo "Unset cloud_provider for ${PLATFORM} or add its cloud-controller-manager integration before bootstrapping." >&2
+  exit 1
+fi
+
 # helm only when the CNI needs it, so a calico cluster keeps the smaller
 # toolchain. Inventory is read first because it is what names the CNI.
 REQUIRED_TOOLS=(ssh kubectl)
@@ -142,6 +148,11 @@ echo "==> waiting for nodes Ready (timeout ${ready_timeout}s)"
 kubectl wait --for=condition=Ready nodes --all --timeout="${ready_timeout}s"
 kubectl get nodes -o wide
 
+if [[ "${PLATFORM}" == "openstack" && "${CLOUD_PROVIDER}" == "external" ]]; then
+  echo "==> installing OpenStack Cloud Controller Manager"
+  "${REPO_ROOT}/scripts/infra/openstack/occm.sh" "${K8S_PLAT_CLUSTER_CONFIG_ID}"
+fi
+
 echo ""
 echo "Cluster ready (kubeadm)."
 echo "  source ${REPO_ROOT}/scripts/lib/kubeconfig-setup.sh ${KUBECONFIG_FILE}"
@@ -153,13 +164,6 @@ if [[ "${CNI}" == "cilium" ]]; then
   if [[ "${CILIUM_HUBBLE}" == "true" ]]; then
     echo "  kubectl -n kube-system port-forward svc/hubble-ui 12000:80"
   fi
-fi
-
-if [[ "${CLOUD_PROVIDER}" == "external" ]]; then
-  echo ""
-  echo "Nodes carry node.cloudprovider.kubernetes.io/uninitialized until a cloud"
-  echo "controller clears it, so most workloads stay Pending. Install it next:"
-  echo "  ${REPO_ROOT}/scripts/infra/openstack/occm.sh ${K8S_PLAT_CLUSTER_CONFIG_ID}"
 fi
 
 k8s_plat_s3_offer
