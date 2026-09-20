@@ -39,7 +39,7 @@ Checklist (compute): [terraform/environments/ec2/STEPS.md](terraform/environment
 
 ## OpenStack
 
-Auth: `sensitive/openstack/clouds.yaml`. Knobs: cluster YAML (`image_name`, `node_flavor`, existing `network_name`, `octavia_lbs`). Example: [`../clusters/openstack/k8s-ocp/config.yaml`](../clusters/openstack/k8s-ocp/config.yaml).
+Auth: `sensitive/openstack/clouds.yaml`. Knobs: cluster YAML (`image.name`, `node_flavor`, existing `network_name`, `octavia.lbs`). Example: [`../clusters/openstack/k8s-ocp/config.yaml`](../clusters/openstack/k8s-ocp/config.yaml).
 
 ```bash
 ./scripts/infra/up.sh openstack k8s-ocp

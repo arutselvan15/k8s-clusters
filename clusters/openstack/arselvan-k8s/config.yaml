@@ -9,8 +9,10 @@ cloud: openstack
 
 terraform:
   worker_nodes: 4
-  ssh_user: ubuntu
-  ssh_port: 22
+  ssh:
+    user: ubuntu
+    port: 22
+    key_algorithm: ED25519
   kubernetes_api_port: 6443
   # Tighten to YOUR.PUBLIC.IP/32 when you leave the lab default.
   admin_cidr: 0.0.0.0/0
@@ -19,10 +21,10 @@ terraform:
   # cinder-csi.yaml), not on the VM root volume.
   root_volume_gb: 50
   volume_delete_on_termination: true
-  image_most_recent: true
-  ssh_key_algorithm: ED25519
   availability_zone: "cloud-rtp-1-c"
-  image_name: UBUNTU-24-SM-2026-05-V2
+  image:
+    name: UBUNTU-24-SM-2026-05-V2
+    most_recent: true
   node_flavor: 4vCPUx8GB
   network_name: tenant-internal-direct-net
   # Required for Octavia: this network has several subnets.
@@ -31,8 +33,9 @@ terraform:
   # NodePorts must be in 30000-32767. Convention here: service port + 30000
   # (80→30080, 443→30443). Extra LBs pick unused ports in the same range.
   # Keep these in sync with k8s-apps overlays/cluster/arselvan-k8s/*.yaml.
-  octavia_lb_flavor: Octavia_2vCPUx2GB
-  octavia_lbs: []
+  octavia:
+    lb_flavor: Octavia_2vCPUx2GB
+    lbs: []
 
 kubeadm:
   kubernetes_version: "1.32"

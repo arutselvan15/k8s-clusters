@@ -16,7 +16,7 @@ Kubernetes is a separate step using the shared kubeadm scripts ([kubeadm.md](./k
 mkdir -p sensitive/openstack
 cp sensitive/openstack/clouds.yaml.example sensitive/openstack/clouds.yaml
 chmod 600 sensitive/openstack/clouds.yaml
-# set image_name, node_flavor, network_name in clusters/openstack/<id>/config.yaml
+# set image.name, node_flavor, network_name in clusters/openstack/<id>/config.yaml
 
 ./scripts/infra/up.sh openstack <id>              # VMs. Done when SSH works.
 ./scripts/infra/kubeadm/up.sh openstack <id>      # Kubernetes. Done when nodes are Ready.
@@ -42,22 +42,22 @@ Application credentials are already project-scoped — do not add `project_name`
 
 | Key | Required | Details |
 |-----|----------|---------|
-| `image_name` | **required** | Glance image name. Horizon: Compute → Images. |
+| `image.name` | **required** | Glance image name. Horizon: Compute → Images. |
 | `node_flavor` | **required** | Nova flavor for control plane and workers. |
 | `network_name` | **required** | Existing Neutron network, looked up not created. |
 | `worker_nodes` | **required** | Worker count. `0` gives a control-plane-only cluster. |
 | `admin_cidr` | **required** | Who may reach SSH and the Kubernetes API. Tighten to `YOUR.IP/32` when you leave the lab default. |
-| `ssh_user` | **required** | SSH user baked into the image (`ubuntu` for the Ubuntu images). |
-| `ssh_port` | **required** | SSH ingress port, normally `22`. |
+| `ssh.user` | **required** | SSH user baked into the image (`ubuntu` for the Ubuntu images). |
+| `ssh.port` | **required** | SSH ingress port, normally `22`. |
 | `kubernetes_api_port` | **required** | API ingress port, normally `6443`. |
 | `root_volume_gb` | **required** | Boot volume size. Nodes boot from volume, so flavors with no local disk still work. |
 | `volume_delete_on_termination` | **required** | Delete the boot volume with the instance. `false` leaves volumes behind that count against quota. |
-| `image_most_recent` | **required** | When several images share `image_name`, take the newest. |
-| `ssh_key_algorithm` | **required** | `ED25519` or `RSA`. The private key is generated into `sensitive/openstack/<name>/ssh.pem`. |
+| `image.most_recent` | **required** | When several images share `image.name`, take the newest. |
+| `ssh.key_algorithm` | **required** | `ED25519` or `RSA`. The private key is generated into `sensitive/openstack/<name>/ssh.pem`. |
 | `availability_zone` | **required** | The key must exist; an empty value lets the Nova scheduler choose. |
-| `subnet_name` | conditional | A specific subnet on `network_name`. Required when `octavia_lbs` is non-empty or OCCM is enabled, because the tenant network has several subnets. |
-| `octavia_lbs` | optional | Terraform-managed load balancers. Empty or absent creates none. See below. |
-| `octavia_lb_flavor` | optional | Octavia flavor for every LB in the list. Defaults to `Octavia_2vCPUx2GB`; empty uses the cloud default. |
+| `subnet_name` | conditional | A specific subnet on `network_name`. Required when `octavia.lbs` is non-empty or OCCM is enabled, because the tenant network has several subnets. |
+| `octavia.lbs` | optional | Terraform-managed load balancers. Empty or absent creates none. See below. |
+| `octavia.lb_flavor` | optional | Octavia flavor for every LB in the list. Defaults to `Octavia_2vCPUx2GB`; empty uses the cloud default. |
 
 ### `kubeadm:`
 

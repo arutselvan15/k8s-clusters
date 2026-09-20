@@ -15,7 +15,7 @@ Learning notes (compute): [docs/infra/openstack.md](../../../../docs/infra/opens
 **Code:** [`main.tf`](./main.tf).  
 **Tear down:** `./scripts/infra/down.sh openstack k8s-ocp -y`
 
-This cloud is **not** like AWS VPC: the project already has `tenant-internal-direct-net`. Terraform **looks up** that network and puts VMs on it. It does **not** create a network, subnet, or router. Optional **Octavia** LBs are the `octavia_lbs` list in the cluster YAML.
+This cloud is **not** like AWS VPC: the project already has `tenant-internal-direct-net`. Terraform **looks up** that network and puts VMs on it. It does **not** create a network, subnet, or router. Optional **Octavia** LBs are the `octavia.lbs` list in the cluster YAML.
 
 AWS name → OpenStack name: existing tenant net (not a new VPC), security group → Neutron **secgroup**, EC2 → Nova **instance**. SSH uses the instance **fixed IP** on that net (reachable if you are on the Cisco network).
 
@@ -51,7 +51,7 @@ chmod 600 sensitive/openstack/clouds.yaml
 ```
 
 Edit `sensitive/openstack/clouds.yaml`: `auth_url`, username/password **or** application credentials, `project_name`, `region_name`.  
-Edit `clusters/openstack/k8s-ocp/config.yaml`: `image_name`, `node_flavor`, `network_name` (existing Neutron network, e.g. `tenant-internal-direct-net`).
+Edit `clusters/openstack/k8s-ocp/config.yaml`: `image.name`, `node_flavor`, `network_name` (existing Neutron network, e.g. `tenant-internal-direct-net`).
 
 If the OpenStack CLI is installed:
 
@@ -111,7 +111,7 @@ Same intent as AWS:
 
 **Learn:** Nova instance, boot **volume**. The port sits on `tenant-internal-direct-net`. The address your laptop SSHs to is that **fixed IP** (no floating IP). You need to be on a network that can reach that tenant net (typical on Cisco campus/VPN).
 
-User is **`ssh_user`** from config (`ubuntu` for Ubuntu images). Key: **`sensitive/openstack/k8s-ocp/ssh.pem`**.
+User is **`ssh.user`** from config (`ubuntu` for Ubuntu images). Key: **`sensitive/openstack/k8s-ocp/ssh.pem`**.
 
 ```bash
 ssh -i sensitive/openstack/k8s-ocp/ssh.pem ubuntu@$(terraform -chdir=infra/terraform/environments/openstack output -raw control_plane_public_ip)
@@ -141,11 +141,12 @@ Set in `clusters/openstack/<id>/config.yaml`:
 
 ```yaml
   subnet_name: tenant-internal-direct-subnet7
-  octavia_lb_flavor: Octavia_2vCPUx2GB
-  octavia_lbs:
-    - name: ingress
-      http_node_port: 30080
-      https_node_port: 30443
+  octavia:
+    lb_flavor: Octavia_2vCPUx2GB
+    lbs:
+      - name: ingress
+        http_node_port: 30080
+        https_node_port: 30443
 ```
 
 `subnet_name` is required when `octavia_lbs` is non-empty because the tenant network has multiple subnets. Each list item is one VIP (TCP 80 and 443) and uses **one** load-balancer quota. `octavia_lbs: []` skips Octavia. OpenStack quota still caps how many apply can create. Same NodePorts = several VIPs to the same ingress-nginx. Outputs: `octavia_lb_vips`, `ingress_lb_vip` if a name is `ingress`. Install ingress-nginx as **NodePort** with matching ports.
