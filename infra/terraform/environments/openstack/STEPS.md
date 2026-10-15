@@ -56,7 +56,7 @@ Edit `clusters/openstack/k8s-ocp/config.yaml`: `image.name`, `node_flavor`, `net
 If the OpenStack CLI is installed:
 
 ```bash
-export OS_CLIENT_CONFIG_FILE=$PWD/sensitive/openstack/clouds.yaml OS_CLOUD=openstack
+export OS_CLIENT_CONFIG_FILE=$PWD/sensitive/openstack/clouds.yaml OS_CLOUD=openstack-rtp
 openstack image list
 openstack flavor list
 openstack network list

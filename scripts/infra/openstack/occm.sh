@@ -50,6 +50,12 @@ source "$REPO_ROOT/scripts/lib/os-env.sh"
 k8s_plat_resolve_cluster_config openstack "${CLUSTER_SPEC}"
 k8s_plat_apply_cluster_outputs
 k8s_plat_require_os_credentials
+OS_CLOUD="$(k8s_plat_yaml_require "${K8S_PLAT_CLUSTER_CONFIG}" cloud)" || exit 1
+export OS_CLOUD
+if [[ ! "${OS_CLOUD}" =~ ^[A-Za-z0-9._-]+$ ]]; then
+  echo "Invalid cloud name in ${K8S_PLAT_CLUSTER_CONFIG}: ${OS_CLOUD}" >&2
+  exit 1
+fi
 
 CHART_VERSION="${OCCM_CHART_VERSION:-$(k8s_plat_yaml_get "${K8S_PLAT_CLUSTER_CONFIG}" occm_chart_version || true)}"
 CHART_VERSION="${CHART_VERSION:-${CHART_VERSION_DEFAULT}}"
@@ -88,10 +94,10 @@ mkdir -p "${K8S_PLAT_CLUSTER_DIR}"
   umask 077
   {
     echo "[Global]"
-    echo "auth-url=$(yq -r '.clouds.openstack.auth.auth_url' "${OS_CLIENT_CONFIG_FILE}")"
-    echo "application-credential-id=$(yq -r '.clouds.openstack.auth.application_credential_id' "${OS_CLIENT_CONFIG_FILE}")"
-    echo "application-credential-secret=$(yq -r '.clouds.openstack.auth.application_credential_secret' "${OS_CLIENT_CONFIG_FILE}")"
-    echo "region=$(yq -r '.clouds.openstack.region_name' "${OS_CLIENT_CONFIG_FILE}")"
+    echo "auth-url=$(yq -r ".clouds[\"${OS_CLOUD}\"].auth.auth_url" "${OS_CLIENT_CONFIG_FILE}")"
+    echo "application-credential-id=$(yq -r ".clouds[\"${OS_CLOUD}\"].auth.application_credential_id" "${OS_CLIENT_CONFIG_FILE}")"
+    echo "application-credential-secret=$(yq -r ".clouds[\"${OS_CLOUD}\"].auth.application_credential_secret" "${OS_CLIENT_CONFIG_FILE}")"
+    echo "region=$(yq -r ".clouds[\"${OS_CLOUD}\"].region_name" "${OS_CLIENT_CONFIG_FILE}")"
     echo ""
     echo "[LoadBalancer]"
     # internal-lb skips the floating IP. The VIP is already a routable address
