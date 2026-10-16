@@ -1,0 +1,87 @@
+# OpenShift 4.22 on OpenStack (IPI, bring-your-own network).
+# Directory name is the config id. Walkthrough: docs/infra/openshift.md
+#
+#   ./scripts/infra/openshift/ocp.sh arselvan-ocp-alln            # next pending phase only
+#   ./scripts/infra/openshift/ocp.sh arselvan-ocp-alln status     # what is done / next
+#   ./scripts/infra/openshift/ocp.sh arselvan-ocp-alln all        # every remaining phase
+#
+# Secrets (gitignored): sensitive/openstack/clouds.yaml, sensitive/openshift/pull-secret.json
+
+# metadata.name in install-config. DNS label: lowercase, digits, '-', 54 characters or fewer.
+# Names: api.<cluster_name>.<base_domain>, *.apps.<cluster_name>.<base_domain>
+cluster_name: arselvan-ocp-alln
+base_domain: arselvan.lab
+# Must match a key under clouds: in sensitive/openstack/clouds.yaml.
+# Application credentials are project-scoped: this one must be created in
+# the arselvan-lab-alln project.
+cloud: arselvan-lab-alln
+
+# Phase 10. Terraform owns the jump host and the machine network the installer
+# reuses. It does not create cluster VMs.
+terraform:
+  # SSH to the jump host only. Tighten to YOUR.IP/32 when you know it.
+  admin_cidr: 10.0.0.0/8
+  ssh:
+    user: ubuntu
+    key_algorithm: ED25519
+  image:
+    name: UBUNTU-24-SM-2026-08-V1
+    most_recent: true
+  jumphost:
+    flavor: 2vCPUx8GB
+    root_volume_gb: 50
+  # Jump host and cluster share this subnet, so the jump host reaches the
+  # VIPs directly. DHCP pool must exclude api_vip and ingress_vip.
+  network:
+    cidr: 10.20.0.0/24
+    dhcp_start: 10.20.0.10
+    dhcp_end: 10.20.0.199
+    # keepalived VIPs: API on the masters, ingress on the router pods.
+    api_vip: 10.20.0.5
+    ingress_vip: 10.20.0.7
+    # Existing external network for the router gateway and floating IPs.
+    external_network: anthos-internal-fip-net
+    # Comma-separated upstream resolvers. In-cluster CoreDNS answers
+    # api-int and *.apps itself.
+    dns_nameservers: 173.37.137.85,173.37.142.73,72.163.47.11
+
+# Phases 30-90. openshift.cilium.* is ignored unless cni is Cilium, so
+# flipping cni needs no other edit here.
+openshift:
+  # Exact z-stream from mirror.openshift.com/pub/openshift-v4/clients/ocp/<release>/
+  release: "4.22.17"
+  # Flavors here have a 50 GB local disk, so every node boots from Cinder.
+  # root_volume_gb >= 100 is the OpenShift minimum. Masters need >= 4 vCPU / 16 GB.
+  control_plane:
+    replicas: 3
+    flavor: 4vCPUx16GB
+  compute:
+    replicas: 2
+    flavor: 4vCPUx16GB
+  root_volume_gb: 120
+  volume_type: CBS
+  # Pod and Service ranges. host_prefix 23 = a /23 (510 pods) per node.
+  cluster_network: 10.128.0.0/14
+  host_prefix: 23
+  service_network: 172.30.0.0/16
+  # Optional Glance image name. Empty = installer downloads RHCOS on the jump
+  # host and uploads it to Glance (~1.2 GB) as <infra-id>-rhcos.
+  cluster_os_image: ""
+  # Leave empty when the router SNAT reaches quay.io / registry.redhat.io
+  # directly (phase 20 tests this).
+  proxy:
+    http: ""
+    https: ""
+    no_proxy: ""
+
+  # OVNKubernetes is built in. Cilium is rendered into install manifests.
+  # Fixed at cluster create; changing it means a rebuild.
+  cni: Cilium
+  cilium:
+    version: "1.19.8"
+    # helm = upstream chart (community, not Red Hat certified). The certified
+    # path is Isovalent CLife manifests, which need an Isovalent customer login.
+    source: helm
+    # true: no kube-proxy, and Cilium talks to api-int directly.
+    kube_proxy_replacement: true
+    hubble: true

@@ -6,7 +6,8 @@ scripts/
 ├── infra/               # cluster create / destroy
 │   ├── up.sh / down.sh  # kind | aws | openstack
 │   ├── kind/ aws/ openstack/
-│   └── kubeadm/         # Kubernetes on VMs (not Terraform)
+│   ├── kubeadm/         # Kubernetes on VMs (not Terraform)
+│   └── openshift/       # ocp.sh phase runner, phases/, remote/ (jump host), down.sh
 └── sensitive/s3.sh      # backup sensitive/ to S3 (init|push|pull|offer)
 ```
 

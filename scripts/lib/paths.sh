@@ -13,7 +13,7 @@ K8S_PLAT_SENSITIVE_DIR="${REPO_ROOT}/sensitive"
 K8S_PLAT_BACKUP_YAML="${K8S_PLAT_CLUSTER_INPUT_DIR}/backup.yaml"
 
 # --- AWS / OpenStack secrets (not cluster-specific) ---
-K8S_PLAT_AWS_CREDENTIALS="${K8S_PLAT_SENSITIVE_DIR}/aws/credentials"
+K8S_PLAT_AWS_CREDENTIALS="${K8S_PLAT_SENSITIVE_DIR}/aws/s3.credentials"
 K8S_PLAT_AWS_CLI_CONF="${K8S_PLAT_SENSITIVE_DIR}/aws/cli.conf"
 K8S_PLAT_OS_CLOUDS="${K8S_PLAT_SENSITIVE_DIR}/openstack/clouds.yaml"
 

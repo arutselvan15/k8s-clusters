@@ -10,7 +10,8 @@ docs/
     ├── kind.md
     ├── aws.md
     ├── kubeadm.md
-    └── openstack.md
+    ├── openstack.md
+    └── openshift.md       # OpenShift 4.22 + selectable CNI, phase by phase
 ```
 
 ## Layout
@@ -18,7 +19,7 @@ docs/
 | Path | Git? | Contents |
 |------|------|----------|
 | `clusters/<platform>/<id>/config.yaml` | yes | Knobs (`cluster_name`, node counts, CIDRs, flavors) |
-| `clusters/backup.yaml` | yes | S3 bucket name and prefix (not keys) |
+| `clusters/backup.yaml` | yes | S3 targets, same fields for AWS and OpenStack COS (not keys) |
 | `sensitive/<platform>/` | no | Cloud credentials |
 | `sensitive/<platform>/<cluster_name>/` | no | kubeconfig, SSH PEM, `cluster.env`, Terraform state |
 
@@ -59,12 +60,15 @@ Kind `down.sh` removes the cluster and `sensitive/kind/<cluster_name>/`. AWS/Ope
 
 ## S3 backup of `sensitive/`
 
-Keys stay in `sensitive/aws/credentials`. Bucket name is in [`clusters/backup.yaml`](../clusters/backup.yaml). After `up.sh` / `down.sh` / kubeadm up or reset, the script asks to push with prune.
+AWS keys stay in `sensitive/aws/s3.credentials`. OpenStack object-store keys stay in `sensitive/openstack/s3.credentials` (copy [`s3.credentials.example`](../sensitive/openstack/s3.credentials.example)). Named backup targets and the default target are in [`clusters/backup.yaml`](../clusters/backup.yaml). After `up.sh` / `down.sh` / kubeadm up or reset, the script asks to push with prune.
 
 ```bash
 ./scripts/sensitive/s3.sh init
 ./scripts/sensitive/s3.sh push --prune
 ./scripts/sensitive/s3.sh pull    # new laptop (AWS keys first)
+
+# Same fields as the AWS target. Fill bucket and endpoint, then:
+./scripts/sensitive/s3.sh push --target openstack-s3 --prune
 ```
 
-Non-interactive: `K8S_PLAT_S3_BACKUP=yes` or `no`. Folder map: [sensitive/README.md](../sensitive/README.md).
+Selection precedence is `--target`, `K8S_PLAT_S3_TARGET`, then the configured default. Non-interactive: `K8S_PLAT_S3_BACKUP=yes` or `no`. Folder map: [sensitive/README.md](../sensitive/README.md).

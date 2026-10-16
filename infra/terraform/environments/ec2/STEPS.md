@@ -11,7 +11,7 @@ Learning notes (compute): [docs/infra/aws.md](../../../../docs/infra/aws.md).
 # after VMs exist: ./scripts/infra/kubeadm/up.sh aws k8s-aws
 ```
 
-**Config:** `sensitive/aws/credentials` (keys), `sensitive/aws/cli.conf` (region), `clusters/aws/<id>/config.yaml` (cluster knobs).  
+**Config:** `sensitive/aws/s3.credentials` (keys), `sensitive/aws/cli.conf` (region), `clusters/aws/<id>/config.yaml` (cluster knobs).  
 **Code:** [`main.tf`](./main.tf) in this directory.  
 **Tear down:** `./scripts/infra/down.sh aws k8s-aws -y`
 
@@ -41,7 +41,7 @@ Update the **Status** column when you finish a step. Summaries below stay as the
 
 **Created:** Local files only.
 
-- `sensitive/aws/credentials` — access key + secret (gitignored)
+- `sensitive/aws/s3.credentials` — access key + secret (gitignored)
 - `sensitive/aws/cli.conf` — `region` (gitignored)
 - `clusters/aws/k8s-aws/config.yaml` — cluster knobs (`cluster_name`, `vpc_cidr`, …) (committed)
 

@@ -14,7 +14,7 @@ Done when you can SSH to the control-plane instance. Inventory for a later kubea
 
 - Checklist (why each object exists): [infra/terraform/environments/ec2/STEPS.md](../../infra/terraform/environments/ec2/STEPS.md)
 - Root module: [environments/ec2/main.tf](../../infra/terraform/environments/ec2/main.tf)
-- Lab settings: [config.yaml](../../clusters/aws/k8s-aws/config.yaml); keys and region: `sensitive/aws/credentials`, `sensitive/aws/cli.conf`
+- Lab settings: [config.yaml](../../clusters/aws/k8s-aws/config.yaml); keys and region: `sensitive/aws/s3.credentials`, `sensitive/aws/cli.conf`
 
 Working directory if you run Terraform by hand:
 
@@ -56,12 +56,12 @@ The current `main.tf` applies **all** of AWS-1–7 in one `./scripts/infra/up.sh
 
    ```bash
    mkdir -p sensitive/aws
-   # credentials: AWS CLI INI (same shape as ~/.aws/credentials)
+   # s3.credentials: AWS CLI INI (same shape as ~/.aws/credentials)
    # cli.conf: optional; first up.sh writes region us-east-1 if missing
-   chmod 600 sensitive/aws/credentials
+   chmod 600 sensitive/aws/s3.credentials
    ```
 
-   Fill keys in `sensitive/aws/credentials`. Set `admin_cidr` in `clusters/aws/k8s-aws/config.yaml` to `YOUR.PUBLIC.IP/32` when you leave the wide-open lab default.
+   Fill keys in `sensitive/aws/s3.credentials`. Set `admin_cidr` in `clusters/aws/k8s-aws/config.yaml` to `YOUR.PUBLIC.IP/32` when you leave the wide-open lab default.
 
 6. Install Terraform: `brew tap hashicorp/tap && brew install hashicorp/tap/terraform`
 

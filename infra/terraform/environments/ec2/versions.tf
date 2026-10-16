@@ -23,6 +23,6 @@ terraform {
 provider "aws" {
   region                   = var.aws_region
   profile                  = var.aws_profile
-  shared_credentials_files = [abspath("${path.root}/../../../../sensitive/aws/credentials")]
+  shared_credentials_files = [abspath("${path.root}/../../../../sensitive/aws/s3.credentials")]
   shared_config_files      = [abspath("${path.root}/../../../../sensitive/aws/cli.conf")]
 }

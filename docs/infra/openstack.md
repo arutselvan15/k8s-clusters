@@ -157,7 +157,7 @@ Neither deletes the existing Neutron network. LBs created by OCCM are owned by K
 Auth is `sensitive/openstack/clouds.yaml` (gitignored). Do not print secrets. The CLI on this cloud is often slow (30–150s).
 
 ```bash
-export OS_CLIENT_CONFIG_FILE=$PWD/sensitive/openstack/clouds.yaml OS_CLOUD=openstack-rtp
+export OS_CLIENT_CONFIG_FILE=$PWD/sensitive/openstack/clouds.yaml OS_CLOUD=arselvan-lab
 # OS_CLOUD must match cloud: in clusters/openstack/<id>/config.yaml
 ```
 

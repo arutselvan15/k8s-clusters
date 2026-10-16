@@ -17,10 +17,11 @@ Or run [`scripts/lib/require-tools.sh`](../scripts/lib/require-tools.sh) with th
 Copy examples under `sensitive/` and fill them locally. Do not commit filled files.
 
 ```bash
-cp sensitive/aws/credentials.example sensitive/aws/credentials
+cp sensitive/aws/s3.credentials.example sensitive/aws/s3.credentials
 cp sensitive/aws/cli.conf.example sensitive/aws/cli.conf
 cp sensitive/openstack/clouds.yaml.example sensitive/openstack/clouds.yaml
-chmod 600 sensitive/aws/credentials sensitive/openstack/clouds.yaml
+cp sensitive/openstack/s3.credentials.example sensitive/openstack/s3.credentials
+chmod 600 sensitive/aws/s3.credentials sensitive/openstack/clouds.yaml sensitive/openstack/s3.credentials
 ```
 
 ## Kubeconfig

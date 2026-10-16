@@ -1,10 +1,39 @@
-# S3 backup of sensitive/ (not a secret). Bucket names are globally unique.
-# Do not put AWS keys here.
+# S3 backup targets for sensitive/ (not a secret). Do not put keys here.
 #
-#   ./scripts/sensitive/s3.sh init
+# Every target uses the same fields. Switch stores by changing `default`,
+# or pass --target for one command:
 #   ./scripts/sensitive/s3.sh push --prune
-# After ./scripts/infra/up.sh, ./scripts/infra/down.sh, or kubeadm/up.sh: y/N then push --prune.
+#   ./scripts/sensitive/s3.sh push --target openstack-s3 --prune
+#   ./scripts/sensitive/s3.sh pull --target arun-aws-s3
+#
+# Keys (gitignored), profile name must match `profile` below:
+#   AWS:            sensitive/aws/s3.credentials
+#   OpenStack COS:  sensitive/openstack/s3.credentials
 
-bucket: arun-aws-s3-general
-region: us-east-1
-prefix: k8s-platform/sensitive
+# Used when --target and K8S_PLAT_S3_TARGET are not supplied.
+default: fms-lab-alln-cos
+
+targets:
+  arun-aws-s3:
+    bucket: arun-aws-s3-general
+    region: us-east-1
+    prefix: k8s-platform/sensitive
+    endpoint: ""
+    profile: default
+    credentials: sensitive/aws/s3.credentials
+    addressing: virtual
+    sse: AES256
+
+  # addressing: path is what OpenStack COS (S3 API) usually requires.
+  fms-lab-alln-cos:
+    bucket: arselvan-fms-lab
+    region: ALLN
+    prefix: k8s-platform/sensitive
+    endpoint: https://alln-cloud-storage-01.cisco.com
+    profile: fms-lab-alln-cos
+    credentials: sensitive/openstack/s3.credentials
+    addressing: path
+    # This Ceph RGW endpoint rejects SSE-S3 (400 InvalidRequest with an empty
+    # message), which also trips an aws-cli 2.34 bug that turns that error
+    # into "argument of type 'NoneType' is not iterable" on every upload.
+    sse: none

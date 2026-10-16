@@ -1,0 +1,107 @@
+# OpenShift 4.22 on OpenStack (IPI, bring-your-own network).
+# Directory name is the config id. Walkthrough: docs/infra/openshift.md
+#
+#   ./scripts/infra/openshift/ocp.sh fms-lab-rtp            # next pending phase only
+#   ./scripts/infra/openshift/ocp.sh fms-lab-rtp status     # what is done / next
+#   ./scripts/infra/openshift/ocp.sh fms-lab-rtp all        # every remaining phase
+#
+# Secrets (gitignored): sensitive/openstack/clouds.yaml, sensitive/openshift/pull-secret.json
+#
+# This project has no network, router or floating IP quota and only 350 GB of
+# CBS, so the cluster lands on the shared provider network that already routes
+# (terraform.network.mode: existing) and every machine boots from its flavor's
+# local disk (root_volume_gb: 0). Nothing here needs a quota increase.
+
+# metadata.name in install-config. DNS label: lowercase, digits, '-', 54 characters or fewer.
+# Names: api.<cluster_name>.<base_domain>, *.apps.<cluster_name>.<base_domain>
+cluster_name: fms-lab-rtp
+base_domain: cisco.com
+# Must match a key under clouds: in sensitive/openstack/clouds.yaml.
+# Application credentials are project-scoped: this one must be created in
+# the fms-lab-rtp project.
+cloud: fms-lab-rtp
+
+# Phase 10. Terraform owns the jump host only here: with mode existing it
+# creates no network, router or floating IP. It never creates cluster VMs.
+terraform:
+  # SSH to the jump host. The jump host has a routable address on the provider
+  # network, so this is where YOU come from. Tighten to YOUR.IP/32.
+  admin_cidr: 10.0.0.0/8,64.100.0.0/14
+  ssh:
+    user: ubuntu
+    key_algorithm: ED25519
+  image:
+    name: UBUNTU-24-SM-2026-08-V1
+    most_recent: true
+  jumphost:
+    flavor: 2vCPUx8GB
+    # 0 = boot from the flavor's 50 GB local disk and use no Cinder quota.
+    root_volume_gb: 0
+  network:
+    # existing: join a provider network that already routes. Terraform creates
+    # no network, subnet, router or floating IP, and the installer is given no
+    # externalNetwork, so none of that quota is needed.
+    mode: existing
+    name: tenant-internal-direct-net
+    # The one subnet the jump host, every node and both VIPs land on. Its CIDR
+    # (64.102.190.0/23) becomes machineNetwork; phase 10 reads it back from
+    # OpenStack. subnet4 is the emptiest of the eight: the top of subnet1 is
+    # almost fully allocated.
+    subnet: tenant-internal-direct-subnet4
+    # keepalived VIPs: API on the masters, ingress on the router pods. These
+    # are routable addresses, so they are also what /etc/hosts points at.
+    #
+    # Other projects' ports are invisible here and the DHCP pool is the whole
+    # range (64.102.190.2-64.102.191.254), so these two were chosen by probing:
+    # silent to ICMP, and at the top of the pool, which Neutron fills last.
+    # Re-check with ping before phase 60 if time has passed:
+    #   ping -c 3 64.102.191.252 && ping -c 3 64.102.191.253   # both must fail
+    api_vip: 64.102.191.252
+    ingress_vip: 64.102.191.253
+
+# Phases 30-90. openshift.cilium.* is ignored unless cni is Cilium, so
+# flipping cni needs no other edit here.
+openshift:
+  # Exact z-stream from mirror.openshift.com/pub/openshift-v4/clients/ocp/<release>/
+  release: "4.22.17"
+  # Masters need >= 4 vCPU / 16 GB. 3 masters + 2 workers + bootstrap + jump
+  # host is 7 instances / 26 vCPU / 104 GB RAM, which is the whole instance,
+  # core and RAM quota of this project.
+  control_plane:
+    replicas: 3
+    flavor: 4vCPUx16GB
+  compute:
+    replicas: 2
+    flavor: 4vCPUx16GB
+  # 0 = no Cinder root volume: nodes boot from the flavor's 50 GB local disk.
+  # Six 100 GB volumes would need 600 GB of CBS and this project has 350, of
+  # which the image registry PVC takes 100. OpenShift asks for 100 GB per
+  # node, so phase 00 warns; this is a lab, and image GC handles the rest.
+  root_volume_gb: 0
+  # Used only when root_volume_gb is not 0.
+  volume_type: CBS
+  # Pod and Service ranges. host_prefix 23 = a /23 (510 pods) per node.
+  cluster_network: 10.128.0.0/14
+  host_prefix: 23
+  service_network: 172.30.0.0/16
+  # Optional Glance image name. Empty = installer downloads RHCOS on the jump
+  # host and uploads it to Glance (~1.2 GB) as <infra-id>-rhcos.
+  cluster_os_image: ""
+  # Leave empty when the provider subnet's gateway reaches quay.io /
+  # registry.redhat.io directly (phase 20 tests this from the jump host).
+  proxy:
+    http: ""
+    https: ""
+    no_proxy: ""
+
+  # OVNKubernetes is built in. Cilium is rendered into install manifests.
+  # Fixed at cluster create; changing it means a rebuild.
+  cni: Cilium
+  cilium:
+    version: "1.19.8"
+    # helm = upstream chart (community, not Red Hat certified). The certified
+    # path is Isovalent CLife manifests, which need an Isovalent customer login.
+    source: helm
+    # true: no kube-proxy, and Cilium talks to api-int directly.
+    kube_proxy_replacement: true
+    hubble: true

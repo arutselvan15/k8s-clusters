@@ -118,11 +118,12 @@ k8s_plat_apply_cluster_outputs() {
   case "${yaml}" in
     */clusters/aws/*) platform="aws" ;;
     */clusters/openstack/*) platform="openstack" ;;
+    */clusters/openshift/*) platform="openshift" ;;
     */clusters/kind/*) platform="kind" ;;
     *) platform="${K8S_PLAT_CLUSTER_PLATFORM:-}" ;;
   esac
   if [[ -z "${platform}" ]]; then
-    echo "Cannot tell kind vs aws vs openstack for ${yaml}" >&2
+    echo "Cannot tell kind vs aws vs openstack vs openshift for ${yaml}" >&2
     return 1
   fi
   K8S_PLAT_CLUSTER_PLATFORM="${platform}"
@@ -161,7 +162,9 @@ k8s_plat_apply_cluster_outputs() {
 
   mkdir -p "${K8S_PLAT_CLUSTER_DIR}"
   echo "==> Cluster ${K8S_PLAT_CLUSTER_NAME} (config ${yaml})"
-  echo "    nodes ${K8S_PLAT_CLUSTER_NAME}-cp / ${K8S_PLAT_CLUSTER_NAME}-wk-N"
+  if [[ "${platform}" != "openshift" ]]; then
+    echo "    nodes ${K8S_PLAT_CLUSTER_NAME}-cp / ${K8S_PLAT_CLUSTER_NAME}-wk-N"
+  fi
   echo "    outputs ${K8S_PLAT_CLUSTER_DIR}"
 }
 
@@ -187,7 +190,7 @@ k8s_plat_cni_env_lines() {
 
 # After terraform destroy succeeds (or there is nothing left to destroy):
 # remove this cluster's outputs. Do not archive locally — S3 (and bucket
-# versioning) is the backup. Never touches aws/credentials, cli.conf, or
+# versioning) is the backup. Never touches aws/s3.credentials, cli.conf, or
 # openstack/clouds.yaml.
 k8s_plat_purge_cluster_outputs() {
   local dir="${K8S_PLAT_CLUSTER_DIR:?cluster dir not set}"

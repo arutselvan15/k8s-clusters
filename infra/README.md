@@ -28,7 +28,7 @@ Host ports **8080 → 80** and **8443 → 443**.
 
 ## AWS
 
-Keys: `sensitive/aws/credentials` and `sensitive/aws/cli.conf`. Knobs: [`../clusters/aws/k8s-aws/config.yaml`](../clusters/aws/k8s-aws/config.yaml).
+Keys: `sensitive/aws/s3.credentials` and `sensitive/aws/cli.conf`. Knobs: [`../clusters/aws/k8s-aws/config.yaml`](../clusters/aws/k8s-aws/config.yaml).
 
 ```bash
 ./scripts/infra/up.sh aws k8s-aws

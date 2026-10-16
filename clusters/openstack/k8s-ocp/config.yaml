@@ -5,7 +5,7 @@
 
 cluster_name: k8s-ocp
 # Must match a key under clouds: in sensitive/openstack/clouds.yaml
-cloud: openstack-rtp
+cloud: arselvan-lab
 
 terraform:
   worker_nodes: 1
